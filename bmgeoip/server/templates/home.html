@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bear &amp; Moose GeoIP · Downloads</title>
+  <title>Bear &amp; Moose GeoIP · GeoIP</title>
   <link rel="icon" href="/pages/images/bmgeoip.png" type="image/png">
   <link rel="stylesheet" href="/static/style.css">
   <script defer src="/static/downloads.js"></script>
@@ -13,16 +13,16 @@
   <header>
     <div class="header-heading">
       <div class="header-brand">
-        <a class="site-logo" href="/" aria-label="BMGeoIP downloads"><img src="/pages/images/bmgeoip.png" alt="" width="64" height="64"></a>
+        <a class="site-logo" href="/" aria-label="BMGeoIP home"><img src="/pages/images/bmgeoip.png" alt="" width="64" height="64"></a>
         <h1>Bear &amp; Moose GeoIP</h1>
       </div>
       <nav aria-label="Service links">
-        <a href="#downloads" aria-current="page">Downloads</a>
+        <a href="#downloads" aria-current="page">GeoIP</a>
         <a href="/health">Health</a>
         <a href="https://bmgeoip.osoyalce.com">Documentation</a>
       </nav>
     </div>
-    <p>Web interface running · Version {{ version }}</p>
+    <p>Version {{ version }}</p>
   </header>
   <main id="downloads">
     <section class="panel" aria-labelledby="data-heading">
@@ -62,7 +62,7 @@
             <td>IPv{{ file.version }}</td>
             <td><code>{{ file.path }}</code></td>
             <td>{% if file.modified %}<time datetime="{{ file.modified }}">{{ file.modified }}</time>{% else %}Not downloaded yet{% endif %}</td>
-            <td>{{ '{:,}'.format(file.size) ~ ' bytes' if file.size is not none else '—' }}</td>
+            <td>{{ '{:,.2f}'.format(file.size / 1000000) ~ ' MB' if file.size is not none else '—' }}</td>
           </tr>{% endfor %}</tbody>
         </table>
       </div>
