@@ -6,6 +6,10 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+- Fix IP lookup timeouts by indexing numeric range prefixes and matching packed
+  endpoints in SQL. Migrate existing records at startup without downloading or
+  reimporting unchanged CSVs; preserve all provider fields and overlapping matches.
+
 ## [0.4.0] - 2026-10-03 @ 11:00
 
 - Add an IP Address Lookup form between CSV Data Files and Status Messages,
