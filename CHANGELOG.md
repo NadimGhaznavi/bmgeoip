@@ -6,6 +6,8 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-03 @ 18:56
+
 - Complete re-write of the website docs.
 - Recover missing MariaDB credentials during upgrade: generate a private
   database.env, create the local BMGeoIP database/account if needed, reset the
