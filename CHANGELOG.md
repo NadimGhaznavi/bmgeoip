@@ -6,6 +6,8 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-03 @ 08:30
+
 - Capture and verify the expected schedule-save error log in server tests so
   simulated permission failures do not print an unexplained traceback.
 
