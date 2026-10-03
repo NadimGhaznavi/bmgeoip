@@ -23,6 +23,9 @@ the authorized workflow.
 - `_config.yml` holds Jekyll settings and site-wide layout defaults.
 - `scripts/` contains maintenance tooling.
 - `bmgeoip/` contains Python code; `bmgeoip/constants/` holds project constants.
+- `bmgeoip/interface/` owns database and external-service interfaces;
+  `bmgeoip/activity/` coordinates background workflows, and `bmgeoip/server/`
+  owns HTTP routes, templates, and service lifecycle.
 - `DBMGeoIP.VERSION` in `bmgeoip/constants/DBMGeoIP.py` holds the project version as a
   literal string.
 - `CHANGELOG.md` records user-visible changes and releases.
@@ -31,11 +34,33 @@ The shared `NadimGhaznavi/minimal-mistakes` theme owns the site's presentation.
 Keep GeoIP-specific settings in this repository. Introduce local layout or asset
 overrides only when a requirement calls for them.
 
-The repository currently contains the documentation site and project constants.
-The planned service accepts IP addresses over ZMQ, returns location information,
-runs under Linux systemd, and refreshes GeoIP data from a public provider on a
-schedule. Add service modules, unit files, and tests as those responsibilities
-are implemented; do not document planned components as existing code.
+The HTTP service runs under Linux systemd, downloads and imports GeoIP CSVs,
+and refreshes them on a configurable schedule. IP lookups and ZMQ messaging are
+planned; do not document planned components as existing code.
+
+## Data access layer (DAL)
+
+Follow CMDB's separation of database mechanics and domain queries. Keep connection,
+bound-query, batch, and transaction mechanics in `bmgeoip/interface/DbMgr.py`.
+Domain interfaces such as `GeoIpDb.py` own their schema and application SQL.
+Background activities coordinate downloads and imports; HTTP handlers and
+templates must not execute SQL.
+
+Each worker owns its database connection and closes it when finished. Never
+share a connection between request threads or with a background worker. Use
+bound parameters for external values; interpolate identifiers only from trusted
+project constants. Materialize query results inside the DAL and close cursors
+before returning them.
+
+The current DAL uses SQLite at `/var/lib/bmgeoip/geoip.sqlite3`; it follows CMDB's
+interface pattern without requiring CMDB's MariaDB service. Preserve all fourteen
+provider fields as text, including IPv6 addresses, empty strings, Unicode, and
+postal-code leading zeros. Stream CSV validation and insert bounded batches.
+Replace each IP family's records and import metadata in one explicit transaction.
+A failed import must roll back to the last usable database records. Keep schema
+creation outside import transactions and skip unchanged CSVs using committed
+import metadata. Verify initial import, both IP families, restart behavior,
+refresh replacement, and rollback after a malformed CSV tail.
 
 ## Keep documentation focused
 

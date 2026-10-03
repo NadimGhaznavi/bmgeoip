@@ -29,7 +29,7 @@ class GeoIpSource:
         self._member = member
         self._timeout = timeout
 
-    def download(self, version: int, destination: Path) -> None:
+    def download(self, version: int, destination: Path, progress=None) -> None:
         """Atomically replace destination with a fully validated UTF-8 CSV."""
         self._validate_version(version)
         destination = Path(destination)
@@ -37,15 +37,29 @@ class GeoIpSource:
         with TemporaryDirectory(prefix=".bmgeoip-", dir=destination.parent) as directory:
             archive = Path(directory) / "source.zip"
             with urlopen(self._url.format(version=version), timeout=self._timeout) as response:
+                length = response.headers.get('Content-Length') if hasattr(response, 'headers') else None
+                total = int(length) if length and length.isdigit() else None
+                received = 0
                 with archive.open("wb") as output:
-                    shutil.copyfileobj(response, output)
+                    while chunk := response.read(1024 * 1024):
+                        output.write(chunk)
+                        received += len(chunk)
+                        if progress:
+                            progress('downloading', received, total)
+                if total is not None and received != total:
+                    raise OSError('Incomplete GeoIP archive download.')
             candidate = Path(directory) / "source.csv"
+            if progress:
+                progress('extracting', 0, None)
             with ZipFile(archive) as zipped:
                 with zipped.open(self._member.format(version=version)) as stream:
                     with candidate.open("wb") as output:
                         shutil.copyfileobj(stream, output)
-            for row in self.rows(candidate, version):
-                pass
+            if progress:
+                progress('validating', 0, None)
+            for count, row in enumerate(self.rows(candidate, version), 1):
+                if progress and count % 1000 == 0:
+                    progress('validating', count, None)
             candidate.replace(destination)
 
     def rows(self, source: Path, version: int) -> Iterator[dict[str, str]]:
