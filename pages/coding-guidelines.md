@@ -35,8 +35,8 @@ Keep GeoIP-specific settings in this repository. Introduce local layout or asset
 overrides only when a requirement calls for them.
 
 The HTTP service runs under Linux systemd, downloads and imports GeoIP CSVs,
-and refreshes them on a configurable schedule. IP lookups and ZMQ messaging are
-planned; do not document planned components as existing code.
+and refreshes them on a configurable schedule. HTTP IP lookups search imported
+records; ZMQ messaging is planned. Do not document planned components as existing code.
 
 ## Data access layer (DAL)
 
