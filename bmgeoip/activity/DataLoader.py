@@ -16,6 +16,7 @@ from bmgeoip.interface.DbMgr import DbMgr
 from bmgeoip.interface.DownloadSchedule import DownloadSchedule
 from bmgeoip.interface.GeoIpDb import GeoIpDb
 from bmgeoip.interface.GeoIpSource import GeoIpSource
+from bmgeoip.interface.StatusMessages import StatusMessages
 
 
 class DataLoader:
@@ -24,6 +25,7 @@ class DataLoader:
         self.schedule = schedule if schedule is not None else DownloadSchedule()
         self.database = Path(database)
         self.status = Path(status)
+        self.status_messages = StatusMessages(self.schedule.settings.parent / 'status-messages.json')
         self._last_update = 0.0
         self._phase = None
 
@@ -38,6 +40,9 @@ class DataLoader:
         now = monotonic()
         if not force and phase == self._phase and now - self._last_update < 0.5:
             return
+        if phase != self._phase or force:
+            detail = message or f'{phase.capitalize()} IPv{version} dataset.'
+            self.status_messages.append(detail)
         self._phase, self._last_update = phase, now
         values = dict(phase=phase, version=version, completed=completed,
                       total=total, message=message)
@@ -52,16 +57,21 @@ class DataLoader:
 
     def run(self, *, refresh=False) -> bool:
         """Fill missing families at startup, or refresh both when cron is enabled."""
+        self.status_messages.append('Scheduled refresh started.' if refresh else 'Startup dataset initialization started.')
         self.schedule.settings.parent.mkdir(parents=True, exist_ok=True)
         with self.schedule.settings.with_suffix('.download.lock').open('a') as stream:
             # Startup waits for any existing cron job; cron skips overlapping work.
+            if not refresh:
+                self.status_messages.append('Waiting for the dataset worker lock.')
             try:
                 fcntl.flock(stream, fcntl.LOCK_EX | (fcntl.LOCK_NB if refresh else 0))
             except BlockingIOError:
+                self.status_messages.append('Scheduled refresh skipped: another dataset worker is active.')
                 return True
             if refresh:
                 with self.schedule.lock():
                     if not self.schedule.read()['enabled']:
+                        self.status_messages.append('Scheduled refresh skipped: downloads are disabled.')
                         return True
             self.schedule.directory.mkdir(parents=True, exist_ok=True)
             self.database.parent.mkdir(parents=True, exist_ok=True)
@@ -71,6 +81,7 @@ class DataLoader:
             errors = []
             counts = {}
             try:
+                self.status_messages.append('Opening GeoIP database and checking schema.')
                 db = DbMgr(self.database)
                 records = GeoIpDb(db)
                 source = GeoIpSource()
@@ -81,15 +92,20 @@ class DataLoader:
                             self._report('downloading', version, force=True)
                             source.download(version, path, progress=lambda phase, done, total:
                                             self._report(phase, version, done, total))
+                        self.status_messages.append(f'IPv{version} CSV available; checking committed import metadata.')
                         count = records.current(version, path)
                         if count is None:
                             self._report('importing', version, force=True)
                             count = records.load(version, path, progress=lambda done:
                                                  self._report('importing', version, done))
+                        else:
+                            self.status_messages.append(f'IPv{version} CSV unchanged; skipping import.')
+                        self.status_messages.append(f'IPv{version} dataset ready: {count:,} records.')
                         counts[version] = count
                         logging.info('IPv%s dataset ready: %s records.', version, count)
                     except (OSError, ValueError, csv.Error, BadZipFile, KeyError, sqlite3.Error):
                         logging.exception('IPv%s dataset initialization failed.', version)
+                        self.status_messages.append(f'IPv{version} dataset failed; previous committed records are preserved. Check the service log.')
                         errors.append(f'IPv{version} failed. Check the service log and restart to retry.')
                 message = ' '.join(errors) if errors else 'Both datasets loaded. ' + ', '.join(
                     f'IPv{version}: {count:,} records' for version, count in counts.items()) + '.'
@@ -110,5 +126,6 @@ class DataLoader:
                 self.run()
             except (OSError, ValueError):
                 logging.exception('Could not initialize GeoIP datasets or write progress.')
+                self.status_messages.append('Dataset initialization failed. Check the service log and restart to retry.')
 
         Thread(target=initialize, name='geoip-data-loader', daemon=True).start()

@@ -17,6 +17,7 @@ from bmgeoip.constants.DBMGeoIP import DBMGeoIP
 from bmgeoip.server.BMGeoIPHandler import BMGeoIPHandler
 from bmgeoip.activity.DataLoader import DataLoader
 from bmgeoip.interface.DownloadSchedule import DownloadSchedule
+from bmgeoip.interface.StatusMessages import StatusMessages
 from test_geoip_source import csv_data
 
 
@@ -25,6 +26,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class HTTPTests(unittest.TestCase):
     def setUp(self):
+        temporary = TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.messages = StatusMessages(Path(temporary.name) / 'messages.json')
+        messages_patch = patch('bmgeoip.server.BMGeoIPHandler.StatusMessages', return_value=self.messages)
+        messages_patch.start()
+        self.addCleanup(messages_patch.stop)
         self.server = ThreadingHTTPServer(('127.0.0.1', 0), BMGeoIPHandler)
         self.thread = Thread(target=self.server.serve_forever)
         self.thread.start()
@@ -59,11 +66,14 @@ class HTTPTests(unittest.TestCase):
         self.assertIn(b'&lt;script&gt;test&lt;/script&gt;', body)
         self.assertNotIn(b'{{', body)
         self.assertIn(b'CSV Download Schedule', body)
+        self.assertIn(b'Status Messages', body)
+        self.assertIn(b'<th scope="col">Timestamp</th><th scope="col">Source</th><th scope="col">Message</th>', body)
         self.assertIn(b'/var/lib/bmgeoip/data/ipv4.csv', body)
         self.assertIn(b'/var/lib/bmgeoip/data/ipv6.csv', body)
         for path, content_type in (('/static/style.css', 'text/css; charset=utf-8'),
                                    ('/pages/images/bmgeoip.png', 'image/png'),
-                                   ('/static/downloads.js', 'text/javascript; charset=utf-8')):
+                                   ('/static/downloads.js', 'text/javascript; charset=utf-8'),
+                                   ('/static/status_messages.js', 'text/javascript; charset=utf-8')):
             status, headers, body = self.request(path)
             self.assertEqual(status, 200)
             self.assertEqual(headers['Content-Type'], content_type)
@@ -109,6 +119,8 @@ class HTTPTests(unittest.TestCase):
             self.assertEqual(status, 200)
             self.assertEqual(json.loads(body), {'schedule': values})
             scheduler.return_value.update.assert_called_once_with(**values)
+            self.assertIn('CSV download schedule saved: enabled; 0 3 * * 0.',
+                          [entry['message'] for entry in self.messages.snapshot()])
             scheduler.return_value.update.side_effect = ValueError('Invalid cron')
             self.assertEqual(self.request('/api/download-schedule', 'POST', json.dumps(values),
                                          {'Content-Type': 'application/json'})[0], 400)
@@ -118,6 +130,19 @@ class HTTPTests(unittest.TestCase):
                                              {'Content-Type': 'application/json'})[0], 503)
             self.assertEqual(logs.records[0].getMessage(), 'Could not save CSV download schedule')
             self.assertIsInstance(logs.records[0].exc_info[1], OSError)
+            self.assertIn('Could not save CSV download schedule.', self.messages.snapshot()[-1]['message'])
+
+    def test_status_history_and_storage_failure(self):
+        self.assertEqual(json.loads(self.request('/status-messages')[2]), [])
+        self.messages.append('<script>example</script>')
+        status, headers, body = self.request('/status-messages')
+        self.assertEqual(status, 200)
+        self.assertEqual(headers['Cache-Control'], 'no-store')
+        self.assertEqual(json.loads(body), self.messages.snapshot())
+        self.assertEqual(self.request('/status-messages', 'HEAD')[2], b'')
+        self.messages.path.write_text('{broken')
+        with self.assertLogs(level='ERROR'):
+            self.assertEqual(self.request('/status-messages')[0], 503)
 
     def test_invalid_schedule_requests_never_reach_scheduler(self):
         with patch('bmgeoip.server.BMGeoIPHandler.DownloadSchedule') as scheduler:
@@ -179,10 +204,15 @@ class LifecycleTests(unittest.TestCase):
                 time.sleep(0.05)
             self.assertEqual(result['phase'], 'ready')
             self.assertTrue((state / 'geoip.sqlite3').is_file())
+            messages = StatusMessages(state / 'status-messages.json').snapshot()
+            self.assertTrue(any('HTTP listener ready' in entry['message'] for entry in messages))
+            self.assertTrue(any('Both datasets loaded' in entry['message'] for entry in messages))
             process.terminate()
             output, errors = process.communicate(timeout=5)
             self.assertEqual(process.returncode, 0, errors.decode())
             self.assertNotIn(b'Traceback', errors)
+            self.assertEqual(StatusMessages(state / 'status-messages.json').snapshot()[-1]['message'],
+                             'HTTP server stopping.')
         finally:
             if process.poll() is None:
                 process.kill()

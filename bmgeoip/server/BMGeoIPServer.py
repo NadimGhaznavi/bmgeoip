@@ -3,6 +3,7 @@
 import argparse
 from http.server import ThreadingHTTPServer
 from ipaddress import ip_address
+import logging
 from pathlib import Path
 import signal
 
@@ -36,11 +37,21 @@ def main() -> None:
             server.data_loader = DataLoader(
                 DownloadSchedule(args.state_dir / 'download-schedule.json', args.state_dir / 'data'),
                 args.state_dir / 'geoip.sqlite3', args.state_dir / 'data-status.json')
+            messages = server.data_loader.status_messages
+            messages.append(f'BMGeoIP {DBMGeoIP.VERSION} starting.')
+            try:
+                schedule = server.data_loader.schedule.read()
+            except (OSError, ValueError):
+                logging.exception('Could not read CSV download schedule at startup')
+                messages.append('CSV download schedule unavailable. Check the service log.')
+            else:
+                messages.append(f"CSV download schedule: {'enabled' if schedule['enabled'] else 'disabled'}; {schedule['expression']}.")
+            messages.append(f'HTTP listener ready on {args.host}:{server.server_port}.')
             server.data_loader.start()
             print(f"BMGeoIP: http://{args.host}:{server.server_port}/", flush=True)
             try:
                 server.serve_forever()
             except KeyboardInterrupt:
-                pass
+                messages.append('HTTP server stopping.')
     finally:
         signal.signal(signal.SIGTERM, previous)

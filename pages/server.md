@@ -9,6 +9,8 @@ The web interface listens on `0.0.0.0:54300` by default and renders HTML with
 Jinja2, with automatic HTML escaping. The dark blue and teal interface follows
 CMDB’s header, panels, tables, and schedule controls. It configures cron downloads of the IPv4 and IPv6 CSVs and
 shows their paths, modification times, sizes, and live download/import progress.
+A scrolling Status Messages box at the bottom follows CMDB’s Timestamp, Source,
+and Message columns.
 Startup fills missing CSVs and imports both IP families into SQLite. GeoIP lookups and ZMQ messaging
 are not implemented yet.
 
@@ -76,11 +78,13 @@ fixed before retrying. Reinstallation starts with fresh state.
 | --- | --- |
 | `/` | CSV download schedule, file paths/status, and project version. |
 | `/api/download-schedule` | POST JSON with `enabled` (boolean) and `expression` (five-field cron string); returns the saved `schedule`. |
+| `/status-messages` | GET/HEAD JSON history with `timestamp`, `source`, and `message` fields. |
 | `/api/data-status` | GET/HEAD JSON progress: `phase`, `version`, `completed`, `total`, and `message`. |
 | `/health` | HTTP 200 with `{"status":"ok","service":"bmgeoip-server"}`. |
 | `/ready` | HTTP 200 with `{"status":"ready","service":"bmgeoip-server"}`; indicates web server readiness only, not GeoIP data availability. |
 | `/static/style.css` | Web interface stylesheet. |
 | `/static/downloads.js` | Schedule form behavior. |
+| `/static/status_messages.js` | Live status history polling. |
 | `/pages/images/bmgeoip.png` | Project logo. |
 
 GET and HEAD are supported on page, asset, and health routes. Schedule POSTs
@@ -98,6 +102,22 @@ curl -i http://127.0.0.1:54300/health
 curl -i http://127.0.0.1:54300/ready
 sudo systemctl restart bmgeoip-server.service
 ```
+
+## Status messages
+
+The bottom panel refreshes every two seconds, showing timestamps in the browser’s
+local timezone and the Python module that produced each message. It follows new
+messages when scrolled to the bottom; scrolling up keeps earlier messages visible.
+Messages cover listener startup and shutdown, saved download schedules, worker lock
+waits, skipped cron runs, database initialization, download/extraction/validation/import
+phases, unchanged CSVs, record counts, and failures. Transfer and record progress
+continue in the Dataset Progress panel without adding a history row for every batch.
+
+The newest 1,000 messages persist in `/var/lib/bmgeoip/status-messages.json`, surviving
+restarts and including the independent cron runner. Writers share a file lock and
+replace the history atomically. A history-write failure is logged without stopping
+dataset work. Detailed exceptions remain in the service journal or `download.log`.
+`--state-dir` places this history beside the selected schedule settings.
 
 ## CSV download schedule
 

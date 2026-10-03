@@ -48,6 +48,10 @@ class DataLoaderTests(unittest.TestCase):
         self.assertEqual(rows[0]['zip'], '00123')
         self.assertEqual(rows[1]['start_ip'], '2606:4700::')
         self.assertEqual(rows[0]['city'], 'É, Example\nCity')
+        messages = [entry['message'] for entry in self.loader.status_messages.snapshot()]
+        for phase in ('Downloading', 'Extracting', 'Validating', 'Importing'):
+            for version in (4, 6):
+                self.assertIn(f'{phase} IPv{version} dataset.', messages)
 
     def test_existing_csvs_import_without_download_and_restart_skips_unchanged(self):
         self.seed()
@@ -80,6 +84,8 @@ class DataLoaderTests(unittest.TestCase):
         self.assertEqual(rows, [{'country': 'Canada'}])
         self.assertEqual(self.query('SELECT records FROM GeoIpImport WHERE version = 4'), [{'records': 1}])
         self.assertEqual(self.loader.read()['phase'], 'error')
+        self.assertTrue(any('IPv4 dataset failed' in entry['message']
+                            for entry in self.loader.status_messages.snapshot()))
 
     def test_refresh_downloads_and_replaces_records_without_duplicates(self):
         self.seed()

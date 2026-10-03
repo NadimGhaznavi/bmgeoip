@@ -7,6 +7,7 @@
   <link rel="icon" href="/pages/images/bmgeoip.png" type="image/png">
   <link rel="stylesheet" href="/static/style.css">
   <script defer src="/static/downloads.js"></script>
+  <script defer src="/static/status_messages.js"></script>
 </head>
 <body>
   <header>
@@ -68,5 +69,15 @@
       <p class="muted">Reload this page to refresh file status. GeoIP lookups are not available yet.</p>
     </section>
   </main>
+  <section class="panel status-messages" aria-labelledby="status-messages-title">
+    <h2 id="status-messages-title">Status Messages</h2>
+    <div id="status-messages" role="log" aria-live="polite" aria-relevant="additions" aria-label="Status Messages" tabindex="0">
+      <table class="status-messages-table" aria-label="Status Messages">
+        <thead><tr><th scope="col">Timestamp</th><th scope="col">Source</th><th scope="col">Message</th></tr></thead>
+        <tbody id="status-message-rows"></tbody>
+      </table>
+    </div>
+    <noscript>Enable JavaScript to see live messages, or open <a href="/status-messages">status history</a>.</noscript>
+  </section>
 </body>
 </html>

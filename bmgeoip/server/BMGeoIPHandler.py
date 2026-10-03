@@ -11,6 +11,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoes
 from bmgeoip.constants.DBMGeoIP import DBMGeoIP
 from bmgeoip.activity.DataLoader import DataLoader
 from bmgeoip.interface.DownloadSchedule import DownloadSchedule
+from bmgeoip.interface.StatusMessages import StatusMessages
 
 
 SERVER_DIR = Path(__file__).resolve().parent
@@ -58,8 +59,10 @@ class BMGeoIPHandler(BaseHTTPRequestHandler):
             return
         except (OSError, RuntimeError):
             logging.exception('Could not save CSV download schedule')
+            self.messages().append('Could not save CSV download schedule. Check the service log and retry.')
             self.respond(503, b'{"error":"Could not save the schedule and cron entry. Check the service log and retry."}', 'application/json')
             return
+        self.messages().append(f"CSV download schedule saved: {'enabled' if schedule['enabled'] else 'disabled'}; {schedule['expression']}.")
         self.respond(200, json.dumps({'schedule': schedule}).encode(), 'application/json')
 
     def serve(self) -> None:
@@ -74,6 +77,14 @@ class BMGeoIPHandler(BaseHTTPRequestHandler):
                 self.respond(503, b'{"error":"Download settings are unavailable. Check the service log."}', 'application/json')
                 return
             self.respond(200, body.encode("utf-8"), "text/html; charset=utf-8")
+        elif path == '/status-messages':
+            try:
+                values = self.messages().snapshot()
+            except (OSError, ValueError):
+                logging.exception('Could not read status messages')
+                self.respond(503, b'{"error":"Status messages are unavailable. Check the service log."}', 'application/json')
+                return
+            self.respond(200, json.dumps(values).encode(), 'application/json')
         elif path == '/api/data-status':
             try:
                 loader = getattr(self.server, 'data_loader', None)
@@ -89,12 +100,16 @@ class BMGeoIPHandler(BaseHTTPRequestHandler):
             self.respond(200, body, "application/json")
         elif path == "/static/style.css":
             self.respond(200, (SERVER_DIR / "static/style.css").read_bytes(), "text/css; charset=utf-8")
-        elif path == "/static/downloads.js":
-            self.respond(200, (SERVER_DIR / "static/downloads.js").read_bytes(), "text/javascript; charset=utf-8")
+        elif path in ("/static/downloads.js", "/static/status_messages.js"):
+            self.respond(200, (SERVER_DIR / path.lstrip("/")).read_bytes(), "text/javascript; charset=utf-8")
         elif path == "/pages/images/bmgeoip.png":
             self.respond(200, (SERVER_DIR.parents[1] / "pages/images/bmgeoip.png").read_bytes(), "image/png")
         else:
             self.respond(404, b'{"error":"Not found."}', "application/json")
+
+    def messages(self) -> StatusMessages:
+        loader = getattr(self.server, 'data_loader', None)
+        return loader.status_messages if loader is not None else StatusMessages()
 
     def downloads(self) -> DownloadSchedule:
         loader = getattr(self.server, 'data_loader', None)
