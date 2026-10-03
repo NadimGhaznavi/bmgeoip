@@ -3,7 +3,7 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import logging
-import sqlite3
+import pymysql
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
@@ -101,7 +101,7 @@ class BMGeoIPHandler(BaseHTTPRequestHandler):
             except LookupError as error:
                 self.respond(503, json.dumps({'error': str(error)}).encode(), 'application/json')
                 return
-            except (OSError, sqlite3.OperationalError):
+            except (OSError, pymysql.OperationalError, pymysql.ProgrammingError):
                 logging.exception('GeoIP lookup data is unavailable')
                 self.respond(503, b'{"error":"Lookup data is unavailable. Check Dataset Status and the service log."}', 'application/json')
                 return

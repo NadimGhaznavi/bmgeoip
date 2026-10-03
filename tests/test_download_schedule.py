@@ -4,6 +4,8 @@ import fcntl
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+
+from database_support import database_settings
 from unittest.mock import patch
 
 from crontab import CronTab
@@ -68,7 +70,7 @@ class ScheduleTests(unittest.TestCase):
         self.assertIsNone(files[1]['modified'])
 
     def test_dispatch_rechecks_enabled_and_attempts_both_families(self):
-        loader = DataLoader(self.schedule, self.schedule.settings.parent / 'geoip.db',
+        loader = DataLoader(self.schedule, database_settings(self, self.schedule.settings.parent / 'database.env'),
                             self.schedule.settings.parent / 'status.json')
         def download(version, path, progress=None):
             if version == 4:

@@ -9,7 +9,7 @@ from bmgeoip.interface.GeoIpDb import GeoIpDb
 
 
 class GeoIpLookup:
-    def __init__(self, database: Path = Path(DGeoIp.DATABASE_FILE)) -> None:
+    def __init__(self, database: Path = Path(DGeoIp.DATABASE_ENV)) -> None:
         self.database = Path(database)
 
     def lookup(self, value: str) -> dict:
