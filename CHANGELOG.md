@@ -6,6 +6,8 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-03 @ 10:17
+
 - Add a CMDB-style Status Messages box with Timestamp, Source, and Message
   columns, live updates, and a shared bounded history covering startup,
   scheduled refreshes, dataset processing, schedule changes, and failures.
