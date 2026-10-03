@@ -7,6 +7,7 @@
   <link rel="icon" href="/pages/images/bmgeoip.png" type="image/png">
   <link rel="stylesheet" href="/static/style.css">
   <script defer src="/static/downloads.js"></script>
+  <script defer src="/static/lookup.js"></script>
   <script defer src="/static/status_messages.js"></script>
 </head>
 <body>
@@ -66,7 +67,24 @@
           </tr>{% endfor %}</tbody>
         </table>
       </div>
-      <p class="muted">Reload this page to refresh file status. GeoIP lookups are not available yet.</p>
+      <p class="muted">Reload this page to refresh file status.</p>
+    </section>
+    <section class="panel" aria-labelledby="lookup-heading">
+      <h2 id="lookup-heading">IP Address Lookup</h2>
+      <form id="ip-lookup" action="/api/lookup" method="get">
+        <label for="lookup-ip">IP address</label>
+        <div class="lookup-controls">
+          <input id="lookup-ip" name="ip" type="text" placeholder="e.g. 8.8.8.8 or 2606:4700::1111" maxlength="45" required autocomplete="off" spellcheck="false" aria-describedby="lookup-help">
+          <button type="submit">Look Up</button>
+        </div>
+        <p id="lookup-help" class="muted">Enter an IPv4 or IPv6 address to search the imported local dataset.</p>
+        <p id="lookup-status" role="status">Ready for a lookup.</p>
+        <noscript>Submitting opens the raw JSON response.</noscript>
+      </form>
+      <section class="lookup-results" aria-labelledby="lookup-results-heading">
+        <h3 id="lookup-results-heading">Lookup Results</h3>
+        <pre id="lookup-results" tabindex="0" aria-label="Raw lookup response">No lookup results yet.</pre>
+      </section>
     </section>
   </main>
   <section class="panel status-messages" aria-labelledby="status-messages-title">

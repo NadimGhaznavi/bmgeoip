@@ -8,9 +8,13 @@ import sqlite3
 class DbMgr:
     """Own one connection; create and close it within the worker using it."""
 
-    def __init__(self, path: Path) -> None:
-        self._connection = sqlite3.connect(path, timeout=30, isolation_level=None)
+    def __init__(self, path: Path, *, readonly=False) -> None:
+        target = Path(path).resolve().as_uri() + '?mode=ro' if readonly else path
+        self._connection = sqlite3.connect(target, uri=readonly, timeout=30, isolation_level=None)
         self._connection.row_factory = sqlite3.Row
+
+    def register_function(self, name: str, arguments: int, function) -> None:
+        self._connection.create_function(name, arguments, function, deterministic=True)
 
     def execute(self, sql: str, params=()) -> int:
         cursor = self._connection.execute(sql, params)

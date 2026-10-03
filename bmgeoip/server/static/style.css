@@ -48,6 +48,13 @@ button:disabled { opacity: .5; cursor: default; }
 }
 progress { width: 100%; accent-color: var(--accent); }
 
+.lookup-controls { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .5rem; }
+#lookup-ip { flex: 1; width: auto; min-width: 0; max-width: 40rem; }
+#lookup-status { font-size: .9rem; }
+.lookup-results { border: 1px solid var(--border); border-radius: .4rem; padding: 1rem; background: var(--surface); }
+.lookup-results h3 { margin: 0 0 .75rem; font-size: 1rem; }
+#lookup-results { margin: 0; max-height: 30rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .9rem; }
+
 .status-messages h2 { font-size: 1rem; color: var(--muted); margin: 0 0 .75rem; }
 #status-messages { height: calc(9em + 2px); line-height: 1.5; overflow: auto; border: 1px solid var(--border); background: var(--background); }
 .status-messages-table { border-collapse: separate; border-spacing: 0; }

@@ -19,6 +19,8 @@ from bmgeoip.activity.DataLoader import DataLoader
 from bmgeoip.interface.DownloadSchedule import DownloadSchedule
 from bmgeoip.interface.StatusMessages import StatusMessages
 from test_geoip_source import csv_data
+from bmgeoip.interface.DbMgr import DbMgr
+from bmgeoip.interface.GeoIpDb import GeoIpDb
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -67,12 +69,15 @@ class HTTPTests(unittest.TestCase):
         self.assertNotIn(b'{{', body)
         self.assertIn(b'CSV Download Schedule', body)
         self.assertIn(b'Status Messages', body)
+        self.assertLess(body.index(b'CSV Data Files'), body.index(b'IP Address Lookup'))
+        self.assertLess(body.index(b'Lookup Results'), body.index(b'Status Messages'))
         self.assertIn(b'<th scope="col">Timestamp</th><th scope="col">Source</th><th scope="col">Message</th>', body)
         self.assertIn(b'/var/lib/bmgeoip/data/ipv4.csv', body)
         self.assertIn(b'/var/lib/bmgeoip/data/ipv6.csv', body)
         for path, content_type in (('/static/style.css', 'text/css; charset=utf-8'),
                                    ('/pages/images/bmgeoip.png', 'image/png'),
                                    ('/static/downloads.js', 'text/javascript; charset=utf-8'),
+                                   ('/static/lookup.js', 'text/javascript; charset=utf-8'),
                                    ('/static/status_messages.js', 'text/javascript; charset=utf-8')):
             status, headers, body = self.request(path)
             self.assertEqual(status, 200)
@@ -131,6 +136,53 @@ class HTTPTests(unittest.TestCase):
             self.assertEqual(logs.records[0].getMessage(), 'Could not save CSV download schedule')
             self.assertIsInstance(logs.records[0].exc_info[1], OSError)
             self.assertIn('Could not save CSV download schedule.', self.messages.snapshot()[-1]['message'])
+
+    def test_lookup_results_boundaries_nested_ranges_and_failures(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            loader = DataLoader(DownloadSchedule(root / 'schedule.json', root / 'data'),
+                                root / 'geoip.db', root / 'status.json')
+            self.server.data_loader = loader
+            with self.assertLogs(level='ERROR'):
+                self.assertEqual(self.request('/api/lookup?ip=8.8.8.8')[0], 503)
+            self.assertFalse(loader.database.exists())
+            db = DbMgr(loader.database)
+            try:
+                records = GeoIpDb(db)
+                self.assertEqual(self.request('/api/lookup?ip=8.8.8.8')[0], 503)
+                for version in (4, 6):
+                    path = root / f'ipv{version}.csv'
+                    path.write_bytes(csv_data(version))
+                    records.load(version, path)
+                for address in ('8.8.8.0', '8.8.8.255', '2606:4700::',
+                                '2606:4700::ff', '2606:4700:0:0:0:0:0:8'):
+                    status, _, body = self.request('/api/lookup?ip=' + address)
+                    self.assertEqual(status, 200)
+                    result = json.loads(body)
+                    self.assertEqual(result['results'][0]['zip'], '00123')
+                    self.assertEqual(result['results'][0]['city'], 'É, Example\nCity')
+                    self.assertEqual(len(result['results'][0]), 14)
+                for address in ('8.8.7.255', '8.8.9.0', '2606:4700::100', '127.0.0.1'):
+                    status, _, body = self.request('/api/lookup?ip=' + address)
+                    self.assertEqual(status, 200)
+                    self.assertEqual(json.loads(body)['results'], [])
+                db.execute('INSERT INTO GeoIp SELECT ip_version, ?, ?, continent, country_code, '
+                           'country, state, city, zip, timezone, latitude, longitude, accuracy, source '
+                           'FROM GeoIp WHERE ip_version = ?', ('8.8.8.8', '8.8.8.8', '4'))
+                self.assertEqual(len(json.loads(self.request('/api/lookup?ip=8.8.8.8')[2])['results']), 2)
+                self.assertEqual(self.request('/api/lookup?ip=8.8.8.8', 'HEAD')[2], b'')
+            finally:
+                db.close()
+
+    def test_invalid_lookup_requests_do_not_open_database(self):
+        with patch('bmgeoip.interface.GeoIpLookup.DbMgr') as db:
+            for query in ('', '?ip=', '?ip=example.com', '?ip=8.8.8.8/24', '?ip=fe80::1%25eth0',
+                          '?ip=8.8.8.8&ip=1.1.1.1', '?ip=8.8.8.8&extra=true',
+                          '?ip=999.1.1.1', '?ip=' + 'a' * 46):
+                status, _, body = self.request('/api/lookup' + query)
+                self.assertEqual(status, 400)
+                self.assertIn('error', json.loads(body))
+            db.assert_not_called()
 
     def test_status_history_and_storage_failure(self):
         self.assertEqual(json.loads(self.request('/status-messages')[2]), [])
