@@ -6,6 +6,11 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-03 @ 19:25
+
+- Add a screenshot gallery covering the web interface and its main sections.
+- Display CSV file update times in the browser's local timezone as `yyyy-mm-dd HH:MM`.
+
 ## [1.2.0] - 2026-10-03 @ 18:56
 
 - Complete re-write of the website docs.

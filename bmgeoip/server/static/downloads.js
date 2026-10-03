@@ -1,5 +1,13 @@
 "use strict";
 
+const pad = value => String(value).padStart(2, '0');
+for (const time of document.querySelectorAll('.files-table time[datetime]')) {
+  const date = new Date(time.dateTime);
+  if (Number.isNaN(date.getTime())) continue;
+  time.textContent = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+    `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 async function updateDataProgress() {
   const progress = document.getElementById('data-progress');
   const status = document.getElementById('data-status');
