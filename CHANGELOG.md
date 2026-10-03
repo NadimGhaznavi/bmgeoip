@@ -6,6 +6,8 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-03 @ 11:11
+
 - Fix IP lookup timeouts by indexing numeric range prefixes and matching packed
   endpoints in SQL. Migrate existing records at startup without downloading or
   reimporting unchanged CSVs; preserve all provider fields and overlapping matches.
