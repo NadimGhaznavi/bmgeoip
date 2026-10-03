@@ -111,7 +111,7 @@ messages when scrolled to the bottom; scrolling up keeps earlier messages visibl
 Messages cover listener startup and shutdown, saved download schedules, worker lock
 waits, skipped cron runs, database initialization, download/extraction/validation/import
 phases, unchanged CSVs, record counts, and failures. Transfer and record progress
-continue in the Dataset Progress panel without adding a history row for every batch.
+continue in the Dataset Status panel without adding a history row for every batch.
 
 The newest 1,000 messages persist in `/var/lib/bmgeoip/status-messages.json`, surviving
 restarts and including the independent cron runner. Writers share a file lock and
@@ -124,7 +124,7 @@ dataset work. Detailed exceptions remain in the service journal or `download.log
 At startup a background worker downloads each missing `ipv4.csv` or `ipv6.csv`,
 even when scheduled downloads are disabled. Existing CSVs are imported without
 downloading them again. The HTTP listener remains available during this process.
-The Dataset Progress panel polls every two seconds and shows the current family
+The Dataset Status panel polls every two seconds and shows the current family
 and phase: checking, downloading, extracting, validating, importing, ready, or error.
 Downloads show transferred bytes and a determinate bar when the provider supplies
 the archive size; other phases use an indeterminate bar. Validation and import

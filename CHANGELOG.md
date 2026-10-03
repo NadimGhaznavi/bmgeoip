@@ -6,6 +6,8 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+- Rename the Dataset Progress panel to Dataset Status.
+
 ## [0.3.1] - 2026-10-03 @ 10:34
 
 - Rename the Downloads navigation link and page title to GeoIP.
