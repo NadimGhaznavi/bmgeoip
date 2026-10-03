@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Create and publish a CMDB release: feature -> dev -> main.
+# Create and publish a BMGeoIP release: feature -> dev -> main.
 
 set -euo pipefail
 
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 
-version_file="cmdb/constants/DCMDB.py"
+version_file="bmgeoip/constants/DBMGeoIP.py"
 version_number='(0|[1-9][0-9]*)'
 prerelease_identifier='(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)'
 version_pattern="^${version_number}\.${version_number}\.${version_number}(-${prerelease_identifier}(\.${prerelease_identifier})*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$"
@@ -18,8 +18,8 @@ fail() {
 current_version() {
     local value
     value=$(sed -nE 's/^    VERSION: Final\[str\] = "([^"]+)"$/\1/p' "${version_file}") ||
-        fail "Cannot read the CMDB version."
-    [[ ${value} =~ ${version_pattern} ]] || fail "Cannot read a single valid CMDB version."
+        fail "Cannot read the BMGeoIP version."
+    [[ ${value} =~ ${version_pattern} ]] || fail "Cannot read a single valid BMGeoIP version."
     printf '%s\n' "${value}"
 }
 
@@ -51,7 +51,7 @@ Run from a clean feature branch with local dev and main up to date.
 Use a version without a leading v. The next branch defaults to
 feat/maint-<version with patch incremented>.
 
-Updates DCMDB.VERSION and CHANGELOG.md, merges through dev to main, tags and
+Updates DBMGeoIP.VERSION and CHANGELOG.md, merges through dev to main, tags and
 pushes the release, then creates the next local feature branch.
 EOF
 }
@@ -88,7 +88,7 @@ for branch in dev main; do
     git show-ref --verify --quiet "refs/heads/${branch}" || fail "Missing local ${branch} branch."
 done
 git ls-files --error-unmatch "${version_file}" CHANGELOG.md >/dev/null ||
-    fail "The CMDB version file and CHANGELOG.md must be committed."
+    fail "The BMGeoIP version file and CHANGELOG.md must be committed."
 current_version >/dev/null
 [[ $(grep -c '^## \[Unreleased\]$' CHANGELOG.md) == 1 ]] ||
     fail "CHANGELOG.md must contain exactly one ## [Unreleased] heading."

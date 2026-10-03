@@ -6,6 +6,9 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+- Fix release tooling to update BMGeoIP's version constant and use BMGeoIP
+  names in help and error messages.
+
 - Match the documentation and download interface to the logo with forest green
   backgrounds, cream text, and golden yellow and orange accents.
 
