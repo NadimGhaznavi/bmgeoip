@@ -6,6 +6,11 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+- Complete re-write of the website docs.
+- Recover missing MariaDB credentials during upgrade: generate a private
+  database.env, create the local BMGeoIP database/account if needed, reset the
+  application password, and grant database access. Preserve existing credentials.
+
 ## [1.1.0] - 2026-10-03 @ 18:18
 
 - Add the Rebuild Jekyll Site GitHub Pages workflow, based on AX3L's build and
