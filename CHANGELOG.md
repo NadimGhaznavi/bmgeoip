@@ -6,6 +6,8 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-03 @ 18:12
+
 - Website homepage updates.
 
 - Align storage and setup documentation with MariaDB, consolidate HTTP and ZMQ
