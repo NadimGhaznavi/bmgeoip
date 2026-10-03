@@ -11,6 +11,7 @@ fi
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 command -v systemctl >/dev/null
 command -v systemd-analyze >/dev/null
+command -v crontab >/dev/null
 
 settings_output=$(python3 -B - <<'PY'
 from pathlib import Path
@@ -59,7 +60,7 @@ destination = Path(DBMGeoIP.BASE_DIR)
 shutil.copytree('bmgeoip', destination / 'bmgeoip', dirs_exist_ok=True,
                 ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
 shutil.copytree('pages/images', destination / 'pages/images', dirs_exist_ok=True)
-for name in ('bmgeoip-server.py', 'requirements.txt'):
+for name in ('bmgeoip-server.py', 'bmgeoip-download.py', 'requirements.txt'):
     shutil.copy2(name, destination / name)
 template = Path('systemd', DBMGeoIP.SERVICE_UNIT).read_text()
 unit = template.replace('@APP@', DBMGeoIP.BASE_DIR).replace('@USER@', DBMGeoIP.SERVICE_USER)
@@ -70,6 +71,7 @@ PY
 
 systemd-analyze verify "/etc/systemd/system/$unit"
 systemctl daemon-reload
+systemctl enable --now cron.service
 systemctl enable --now "$unit"
 
 python3 -B - <<'PY'

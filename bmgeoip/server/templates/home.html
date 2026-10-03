@@ -3,24 +3,64 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bear &amp; Moose GeoIP</title>
+  <title>Bear &amp; Moose GeoIP · Downloads</title>
   <link rel="icon" href="/pages/images/bmgeoip.png" type="image/png">
   <link rel="stylesheet" href="/static/style.css">
+  <script defer src="/static/downloads.js"></script>
 </head>
 <body>
-  <main>
-    <img class="logo" src="/pages/images/bmgeoip.png" alt="Bear &amp; Moose GeoIP logo">
-    <h1>Bear &amp; Moose GeoIP</h1>
-    <p class="status">Web interface running</p>
-    <p>GeoIP lookups and dataset refreshes are not available yet.</p>
-    <dl>
-      <dt>Version</dt><dd>{{ version }}</dd>
-    </dl>
-    <nav aria-label="Service links">
-      <a href="/health">Health</a>
-      <a href="/ready">Readiness</a>
-      <a href="https://bmgeoip.osoyalce.com">Documentation</a>
-    </nav>
+  <header>
+    <div class="header-heading">
+      <div class="header-brand">
+        <a class="site-logo" href="/" aria-label="BMGeoIP downloads"><img src="/pages/images/bmgeoip.png" alt="" width="64" height="64"></a>
+        <h1>Bear &amp; Moose GeoIP</h1>
+      </div>
+      <nav aria-label="Service links">
+        <a href="#downloads" aria-current="page">Downloads</a>
+        <a href="/health">Health</a>
+        <a href="https://bmgeoip.osoyalce.com">Documentation</a>
+      </nav>
+    </div>
+    <p>Web interface running · Version {{ version }}</p>
+  </header>
+  <main id="downloads">
+    <section class="panel" aria-labelledby="schedule-heading">
+      <h2 id="schedule-heading">CSV Download Schedule</h2>
+      <p class="muted">Download the IPv4 and IPv6 datasets from ipapi.is on a recurring schedule.</p>
+      <form id="download-schedule">
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Download schedule settings">
+          <table class="schedule-table">
+            <thead><tr><th scope="col">Dataset</th><th scope="col">Enabled</th><th scope="col">Cron Schedule</th><th scope="col">Actions</th></tr></thead>
+            <tbody><tr>
+              <td>IPv4 &amp; IPv6 CSVs</td>
+              <td><input id="schedule-enabled" type="checkbox" aria-label="Enable scheduled CSV downloads" {% if schedule.enabled %}checked{% endif %}></td>
+              <td><input id="schedule-expression" type="text" value="{{ schedule.expression }}" size="20" maxlength="255" required aria-label="Cron schedule for CSV downloads" aria-describedby="cron-help" autocomplete="off" spellcheck="false"></td>
+              <td><button type="submit">Update</button></td>
+            </tr></tbody>
+          </table>
+        </div>
+        <p id="cron-help" class="muted">Five fields: minute, hour, day of month, month, day of week. Uses the server’s local timezone.</p>
+        <p class="muted">Example: <code>0 3 * * 0</code> runs every Sunday at 03:00. Disable the schedule and click Update to stop future downloads.</p>
+        <p id="schedule-status" role="status">{{ 'Scheduled downloads enabled.' if schedule.enabled else 'Scheduled downloads disabled.' }}</p>
+        <noscript>Enable JavaScript to update the download schedule.</noscript>
+      </form>
+    </section>
+    <section class="panel" aria-labelledby="files-heading">
+      <h2 id="files-heading">CSV Data Files</h2>
+      <p class="muted">Each download is validated before it replaces the existing CSV. Failed downloads keep the last usable file.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="CSV data file paths and status">
+        <table class="files-table">
+          <thead><tr><th scope="col">Dataset</th><th scope="col">File Path</th><th scope="col">Last Updated (UTC)</th><th scope="col">Size</th></tr></thead>
+          <tbody>{% for file in files %}<tr>
+            <td>IPv{{ file.version }}</td>
+            <td><code>{{ file.path }}</code></td>
+            <td>{% if file.modified %}<time datetime="{{ file.modified }}">{{ file.modified }}</time>{% else %}Not downloaded yet{% endif %}</td>
+            <td>{{ '{:,}'.format(file.size) ~ ' bytes' if file.size is not none else '—' }}</td>
+          </tr>{% endfor %}</tbody>
+        </table>
+      </div>
+      <p class="muted">Reload this page to refresh file status. GeoIP lookups are not available yet.</p>
+    </section>
   </main>
 </body>
 </html>

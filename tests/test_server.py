@@ -30,10 +30,10 @@ class HTTPTests(unittest.TestCase):
         self.thread.join(timeout=5)
         self.server.server_close()
 
-    def request(self, path, method='GET'):
+    def request(self, path, method='GET', body=None, headers=None):
         connection = HTTPConnection(*self.server.server_address, timeout=5)
         try:
-            connection.request(method, path)
+            connection.request(method, path, body=body, headers=headers or {})
             response = connection.getresponse()
             return response.status, dict(response.getheaders()), response.read()
         finally:
@@ -53,9 +53,12 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(headers['Content-Type'], 'text/html; charset=utf-8')
         self.assertIn(b'&lt;script&gt;test&lt;/script&gt;', body)
         self.assertNotIn(b'{{', body)
-        self.assertIn(b'GeoIP lookups and dataset refreshes are not available yet.', body)
+        self.assertIn(b'CSV Download Schedule', body)
+        self.assertIn(b'/var/lib/bmgeoip/data/ipv4.csv', body)
+        self.assertIn(b'/var/lib/bmgeoip/data/ipv6.csv', body)
         for path, content_type in (('/static/style.css', 'text/css; charset=utf-8'),
-                                   ('/pages/images/bmgeoip.png', 'image/png')):
+                                   ('/pages/images/bmgeoip.png', 'image/png'),
+                                   ('/static/downloads.js', 'text/javascript; charset=utf-8')):
             status, headers, body = self.request(path)
             self.assertEqual(status, 200)
             self.assertEqual(headers['Content-Type'], content_type)
@@ -75,6 +78,35 @@ class HTTPTests(unittest.TestCase):
             status, headers, body = self.request(path)
             self.assertEqual(status, 404)
             self.assertEqual(json.loads(body), {'error': 'Not found.'})
+
+    def test_schedule_save_and_failure_responses(self):
+        values = {'enabled': True, 'expression': '0 3 * * 0'}
+        with patch('bmgeoip.server.BMGeoIPHandler.DownloadSchedule') as scheduler:
+            scheduler.return_value.update.return_value = values
+            status, _, body = self.request('/api/download-schedule', 'POST', json.dumps(values),
+                                            {'Content-Type': 'application/json'})
+            self.assertEqual(status, 200)
+            self.assertEqual(json.loads(body), {'schedule': values})
+            scheduler.return_value.update.assert_called_once_with(**values)
+            scheduler.return_value.update.side_effect = ValueError('Invalid cron')
+            self.assertEqual(self.request('/api/download-schedule', 'POST', json.dumps(values),
+                                         {'Content-Type': 'application/json'})[0], 400)
+            scheduler.return_value.update.side_effect = OSError('denied')
+            self.assertEqual(self.request('/api/download-schedule', 'POST', json.dumps(values),
+                                         {'Content-Type': 'application/json'})[0], 503)
+
+    def test_invalid_schedule_requests_never_reach_scheduler(self):
+        with patch('bmgeoip.server.BMGeoIPHandler.DownloadSchedule') as scheduler:
+            for body in ('{', '[]', '{}', '{"enabled":true}', 'x' * 4097):
+                self.assertEqual(self.request('/api/download-schedule', 'POST', body,
+                                             {'Content-Type': 'application/json'})[0], 400)
+            self.assertEqual(self.request('/api/download-schedule', 'POST', '{}',
+                                         {'Content-Type': 'application/x-www-form-urlencoded'})[0], 400)
+            self.assertEqual(self.request('/api/download-schedule', 'POST', '{}',
+                                         {'Content-Type': 'application/json',
+                                          'Origin': 'https://other.example'})[0], 403)
+            self.assertEqual(self.request('/missing', 'POST', '{}')[0], 404)
+            scheduler.assert_not_called()
 
 
 class LifecycleTests(unittest.TestCase):

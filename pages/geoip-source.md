@@ -29,8 +29,7 @@ path whose parent directory already exists. It returns `None` after success.
 It streams downloads and extraction through temporary files beside the
 destination, validates the entire CSV, then atomically replaces that file.
 Temporary files are removed after success or failure. Each family is published
-independently; publication of both families together belongs to a future refresh
-coordinator.
+independently; the scheduled runner attempts each family separately.
 
 Validation requires the expected fourteen-column header, complete rows, at least
 one range, valid ordered IP endpoints matching the requested family, and optional
@@ -60,5 +59,6 @@ Tests use small in-memory archives and simulated network responses, covering
 both families, malformed data, interrupted transfers, and preservation of an
 existing dataset. They do not download the public datasets.
 
-Database import, IP lookup, scheduled refreshes, and ZMQ clients are later phases.
-This interface is not yet called by the running web service.
+The [server download schedule]({{ site.baseurl }}{% link pages/server.md %})
+uses this interface from an independent cron runner. Database import, IP lookup,
+and ZMQ clients are later phases.

@@ -11,10 +11,13 @@ ExecStart=@APP@/.venv/bin/python -B -u @APP@/bmgeoip-server.py
 Restart=on-failure
 RestartSec=3
 TimeoutStopSec=15
-NoNewPrivileges=true
+# crontab uses its setgid helper to update the service account's jobs.
+NoNewPrivileges=false
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
+StateDirectory=bmgeoip
+ReadWritePaths=/var/spool/cron/crontabs
 
 [Install]
 WantedBy=multi-user.target

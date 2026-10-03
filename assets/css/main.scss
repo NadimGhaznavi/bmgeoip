@@ -1,0 +1,31 @@
+---
+search: false
+---
+
+@charset "utf-8";
+
+// Project logo palette; retain the shared theme's layouts and components.
+$background-color: #002b23;
+$text-color: #fff0c7;
+$muted-text-color: #c3cba9;
+$primary-color: #ffcc24;
+$border-color: #668462;
+$code-background-color: #003e35;
+$code-background-color-dark: #002b23;
+$form-background-color: #003e35;
+$footer-background-color: #003e35;
+$link-color: #ffcc24;
+$link-color-hover: #ff9c19;
+$link-color-visited: #ffcc24;
+$masthead-link-color: #fff0c7;
+$masthead-link-color-hover: #ffcc24;
+$navicon-link-color-hover: #003e35;
+$focus-color: #ffcc24;
+$dark-gray: #002b23;
+$base00: #003e35;
+$base05: #fff0c7;
+
+@import "minimal-mistakes/skins/{{ site.minimal_mistakes_skin | default: 'default' }}";
+@import "minimal-mistakes";
+
+:root { color-scheme: dark; }

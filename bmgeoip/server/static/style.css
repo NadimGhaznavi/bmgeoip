@@ -1,11 +1,48 @@
-:root { color-scheme: light; font-family: system-ui, sans-serif; color: #20342e; background: #f3f5f0; }
-body { margin: 0; padding: 2rem 1rem; }
-main { max-width: 42rem; margin: auto; padding: 2rem; background: white; border: 1px solid #d7ded5; border-radius: 1rem; }
-.logo { display: block; width: 100%; max-width: 20rem; margin: auto; }
-h1 { font-size: clamp(1.5rem, 5vw, 2rem); }
-.status { color: #285a3e; font-weight: 600; }
-dl { display: flex; gap: 1rem; }
-dd { margin: 0; }
-nav { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
-a { color: #285a3e; text-underline-offset: .2em; }
-a:focus-visible { outline: 2px solid #285a3e; outline-offset: 4px; }
+:root {
+  color-scheme: dark;
+  /* Forest green, cream, and sunlit accents from the project logo. */
+  --background: #002b23;
+  --surface: #003e35;
+  --text: #fff0c7;
+  --muted: #c3cba9;
+  --border: #668462;
+  --accent: #ffcc24;
+  --accent-hover: #ff9c19;
+}
+* { box-sizing: border-box; }
+body { background: var(--background); color: var(--text); font: 16px system-ui, sans-serif; margin: 0; padding: 1rem; min-height: 100vh; display: flex; flex-direction: column; gap: 1rem; }
+header, .panel { border: 1px solid var(--border); border-radius: .4rem; padding: 1rem 1.5rem; }
+header { background: var(--surface); }
+.header-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.header-brand { display: flex; align-items: center; gap: .75rem; min-width: 0; }
+.site-logo, .site-logo img { display: block; flex-shrink: 0; }
+h1 { margin: 0; font-size: clamp(1.5rem, 5vw, 2em); }
+header p { margin: .5rem 0 0; color: var(--muted); font-size: .85rem; }
+nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 1rem; }
+a { color: var(--accent); text-underline-offset: .2em; }
+a:hover { color: var(--accent-hover); }
+nav [aria-current="page"] { color: var(--text); font-weight: 700; }
+main { flex: 1; display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+h2 { font-size: 1.15rem; margin: 0 0 1rem; }
+.muted { color: var(--muted); font-size: .9rem; line-height: 1.6; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+.schedule-table { min-width: 38rem; }
+.files-table { min-width: 42rem; }
+th, td { text-align: left; padding: .8rem; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+th { background: var(--surface); white-space: nowrap; }
+.schedule-table td:first-child { white-space: nowrap; }
+tbody tr:hover { background: var(--surface); }
+code, input[type="text"] { font-family: monospace; }
+input[type="text"] { width: 22ch; background: var(--background); color: var(--text); border: 1px solid var(--border); padding: .4rem .6rem; font-size: inherit; }
+input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); cursor: pointer; }
+button { background: var(--accent); color: var(--background); border: 1px solid var(--accent); border-radius: .25rem; padding: .5rem 1rem; font: inherit; cursor: pointer; }
+button:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+button:disabled { opacity: .5; cursor: default; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+#schedule-status { font-size: .9rem; }
+@media (max-width: 600px) {
+  body { padding: .5rem; gap: .5rem; }
+  header, .panel { padding: 1rem; }
+  main { gap: .5rem; }
+}

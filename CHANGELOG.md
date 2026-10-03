@@ -6,6 +6,14 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+- Match the documentation and download interface to the logo with forest green
+  backgrounds, cream text, and golden yellow and orange accents.
+
+- Add a CMDB-style CSV download schedule page in dark blue and teal, with enabled
+  and cron controls, persistent service-account cron scheduling, validated IPv4/IPv6
+  downloads, and CSV paths, modification times, and sizes. Update installation
+  permissions and document scheduling and download logs.
+
 - Add a configurable GeoIP source interface for IPv4/IPv6 CSV retrieval from
   ipapi.is, with full validation, atomic file replacement, failure preservation,
   and retrieval tests and documentation.
