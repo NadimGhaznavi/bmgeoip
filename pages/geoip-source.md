@@ -64,4 +64,5 @@ existing dataset. They do not download the public datasets.
 
 The [server download schedule]({{ site.baseurl }}{% link pages/server.md %})
 uses this interface at startup and from an independent cron runner, then imports
-the records through `GeoIpDb`. IP lookup and ZMQ clients are later phases.
+the records through `GeoIpDb`. The server's IP Address Lookup form searches the
+imported records; ZMQ clients remain a later phase.

@@ -11,8 +11,9 @@ CMDB’s header, panels, tables, and schedule controls. It configures cron downl
 shows their paths, modification times, sizes, and live download/import progress.
 A scrolling Status Messages box at the bottom follows CMDB’s Timestamp, Source,
 and Message columns.
-Startup fills missing CSVs and imports both IP families into SQLite. GeoIP lookups and ZMQ messaging
-are not implemented yet.
+Startup fills missing CSVs and imports both IP families into SQLite. The IP Address
+Lookup form searches those records and displays raw JSON in a nested Lookup Results
+box. ZMQ messaging is not implemented yet.
 
 ## Installation
 
@@ -76,7 +77,8 @@ fixed before retrying. Reinstallation starts with fresh state.
 
 | Endpoint | Behavior |
 | --- | --- |
-| `/` | CSV download schedule, file paths/status, and project version. |
+| `/` | CSV download schedule, file paths/status, IP address lookup, and project version. |
+| `/api/lookup?ip=8.8.8.8` | GET/HEAD JSON with normalized `ip`, numeric `ip_version`, and a `results` array of matching provider records. |
 | `/api/download-schedule` | POST JSON with `enabled` (boolean) and `expression` (five-field cron string); returns the saved `schedule`. |
 | `/status-messages` | GET/HEAD JSON history with `timestamp`, `source`, and `message` fields. |
 | `/api/data-status` | GET/HEAD JSON progress: `phase`, `version`, `completed`, `total`, and `message`. |
@@ -84,6 +86,7 @@ fixed before retrying. Reinstallation starts with fresh state.
 | `/ready` | HTTP 200 with `{"status":"ready","service":"bmgeoip-server"}`; indicates web server readiness only, not GeoIP data availability. |
 | `/static/style.css` | Web interface stylesheet. |
 | `/static/downloads.js` | Schedule form behavior. |
+| `/static/lookup.js` | IP lookup form and raw response display. |
 | `/static/status_messages.js` | Live status history polling. |
 | `/pages/images/bmgeoip.png` | Project logo. |
 
@@ -103,6 +106,26 @@ curl -i http://127.0.0.1:54300/ready
 sudo systemctl restart bmgeoip-server.service
 ```
 
+## IP address lookup
+
+Enter one IPv4 or IPv6 address and click Look Up. The form sits between CSV Data
+Files and Status Messages. Lookup Results shows the complete JSON response,
+including all fourteen original provider fields as strings. Matching ranges include
+both endpoints; overlapping or nested ranges return every matching record ordered
+by their numeric start and end addresses. An empty `results` array means the loaded
+family contains no matching range, including addresses absent from the provider data.
+
+`GET /api/lookup?ip=8.8.8.8` accepts exactly one `ip` parameter, trims surrounding
+whitespace, and normalizes the address in the response. Hostnames, CIDR prefixes,
+IPv6 zone IDs, duplicate parameters, and extra parameters return HTTP 400 with an
+`error` message. A missing database, an unimported family, or an unavailable
+database returns HTTP 503 with an `error` message. The form shows these raw error
+responses too. Without JavaScript, submitting opens the JSON endpoint directly.
+
+Each request opens and closes its own read-only database connection. Lookups scan
+the requested family's ranges using numeric address comparisons; response time
+depends on dataset size. Committed records remain usable after a failed refresh.
+
 ## Status messages
 
 The bottom panel refreshes every two seconds, showing timestamps in the browser’s
@@ -111,7 +134,7 @@ messages when scrolled to the bottom; scrolling up keeps earlier messages visibl
 Messages cover listener startup and shutdown, saved download schedules, worker lock
 waits, skipped cron runs, database initialization, download/extraction/validation/import
 phases, unchanged CSVs, record counts, and failures. Transfer and record progress
-continue in the Dataset Progress panel without adding a history row for every batch.
+continue in the Dataset Status panel without adding a history row for every batch.
 
 The newest 1,000 messages persist in `/var/lib/bmgeoip/status-messages.json`, surviving
 restarts and including the independent cron runner. Writers share a file lock and
@@ -124,7 +147,7 @@ dataset work. Detailed exceptions remain in the service journal or `download.log
 At startup a background worker downloads each missing `ipv4.csv` or `ipv6.csv`,
 even when scheduled downloads are disabled. Existing CSVs are imported without
 downloading them again. The HTTP listener remains available during this process.
-The Dataset Progress panel polls every two seconds and shows the current family
+The Dataset Status panel polls every two seconds and shows the current family
 and phase: checking, downloading, extracting, validating, importing, ready, or error.
 Downloads show transferred bytes and a determinate bar when the provider supplies
 the archive size; other phases use an indeterminate bar. Validation and import

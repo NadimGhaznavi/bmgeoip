@@ -6,6 +6,13 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-03 @ 11:00
+
+- Add an IP Address Lookup form between CSV Data Files and Status Messages,
+  with raw JSON in a nested Lookup Results box. Search local IPv4/IPv6 ranges,
+  preserve all provider fields, and report invalid input and unavailable data.
+- Rename the Dataset Progress panel to Dataset Status.
+
 ## [0.3.1] - 2026-10-03 @ 10:34
 
 - Rename the Downloads navigation link and page title to GeoIP.
