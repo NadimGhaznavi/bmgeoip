@@ -92,8 +92,11 @@ class HTTPTests(unittest.TestCase):
             self.assertEqual(self.request('/api/download-schedule', 'POST', json.dumps(values),
                                          {'Content-Type': 'application/json'})[0], 400)
             scheduler.return_value.update.side_effect = OSError('denied')
-            self.assertEqual(self.request('/api/download-schedule', 'POST', json.dumps(values),
-                                         {'Content-Type': 'application/json'})[0], 503)
+            with self.assertLogs(level='ERROR') as logs:
+                self.assertEqual(self.request('/api/download-schedule', 'POST', json.dumps(values),
+                                             {'Content-Type': 'application/json'})[0], 503)
+            self.assertEqual(logs.records[0].getMessage(), 'Could not save CSV download schedule')
+            self.assertIsInstance(logs.records[0].exc_info[1], OSError)
 
     def test_invalid_schedule_requests_never_reach_scheduler(self):
         with patch('bmgeoip.server.BMGeoIPHandler.DownloadSchedule') as scheduler:
