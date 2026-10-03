@@ -46,3 +46,4 @@ button:disabled { opacity: .5; cursor: default; }
   header, .panel { padding: 1rem; }
   main { gap: .5rem; }
 }
+progress { width: 100%; accent-color: var(--accent); }

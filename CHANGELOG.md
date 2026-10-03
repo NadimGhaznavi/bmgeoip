@@ -6,6 +6,13 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+- Download missing IPv4/IPv6 CSVs automatically at server startup, show live
+  download/validation/import progress, and import validated records into SQLite
+  after startup and scheduled downloads. Preserve previous records on failed
+  imports and skip unchanged CSVs on restart.
+- Add CMDB-style database mechanics and domain interfaces, DAL coding guidance,
+  and an isolated `--state-dir` option for development.
+
 ## [0.2.0] - 2026-10-03 @ 09:10
 
 - Add CMDB-style upgrade and uninstall scripts. Upgrades reuse installation and

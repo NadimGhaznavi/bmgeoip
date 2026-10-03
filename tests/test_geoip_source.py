@@ -73,6 +73,25 @@ class GeoIpSourceTests(unittest.TestCase):
         opened.assert_called_once_with("https://example.com/ipv4.zip", timeout=7)
         self.assertEqual(self.destination.read_bytes(), csv_data())
 
+    def test_progress_reports_bytes_and_validation_and_rejects_short_transfer(self):
+        archive = zipped(csv_data())
+        response = BytesIO(archive)
+        response.headers = {'Content-Length': str(len(archive))}
+        updates = []
+        with patch('bmgeoip.interface.GeoIpSource.urlopen', return_value=response):
+            GeoIpSource().download(4, self.destination,
+                                   progress=lambda *values: updates.append(values))
+        self.assertIn(('downloading', len(archive), len(archive)), updates)
+        self.assertIn(('extracting', 0, None), updates)
+        self.assertIn(('validating', 0, None), updates)
+        self.destination.write_bytes(b'previous dataset')
+        response = BytesIO(archive)
+        response.headers = {'Content-Length': str(len(archive) + 1)}
+        with patch('bmgeoip.interface.GeoIpSource.urlopen', return_value=response):
+            with self.assertRaisesRegex(OSError, 'Incomplete'):
+                GeoIpSource().download(4, self.destination)
+        self.assert_preserved()
+
     def test_network_failures_preserve_existing_dataset(self):
         for error in (URLError("unavailable"), TimeoutError("timeout"),
                       HTTPError("https://example.com", 404, "missing", {}, None)):

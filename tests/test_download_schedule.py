@@ -10,6 +10,8 @@ from crontab import CronTab
 
 from bmgeoip.interface.DownloadSchedule import DownloadSchedule
 from bmgeoip.interface.DownloadRunner import run
+from bmgeoip.activity.DataLoader import DataLoader
+from test_geoip_source import csv_data
 
 
 class ScheduleTests(unittest.TestCase):
@@ -17,7 +19,7 @@ class ScheduleTests(unittest.TestCase):
         directory = TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         root = Path(directory.name)
-        self.schedule = DownloadSchedule(root / 'schedule.json', root / 'data')
+        self.schedule = DownloadSchedule(root / 'download-schedule.json', root / 'data')
         self.tab = CronTab(tab='15 2 * * * /other # unrelated\n')
         self.tab.write = unittest.mock.Mock()
         cron = patch('bmgeoip.interface.DownloadSchedule.CronTab', return_value=self.tab)
@@ -33,6 +35,8 @@ class ScheduleTests(unittest.TestCase):
             self.assertEqual(len(jobs), 1)
             self.assertEqual(str(jobs[0].slices), expression)
             self.assertIn('/bmgeoip-download.py', jobs[0].command)
+            self.assertIn('--state-dir', jobs[0].command)
+            self.assertIn(str(self.schedule.settings.parent), jobs[0].command)
         self.schedule.update(False, '30 4 * * 1-5')
         self.assertFalse(self.schedule.read()['enabled'])
         self.assertEqual(len(list(self.tab.find_comment(self.schedule.COMMENT))), 0)
@@ -64,23 +68,32 @@ class ScheduleTests(unittest.TestCase):
         self.assertIsNone(files[1]['modified'])
 
     def test_dispatch_rechecks_enabled_and_attempts_both_families(self):
-        with patch('bmgeoip.interface.DownloadRunner.DownloadSchedule', return_value=self.schedule), \
-                patch('bmgeoip.interface.DownloadRunner.GeoIpSource') as source:
+        loader = DataLoader(self.schedule, self.schedule.settings.parent / 'geoip.db',
+                            self.schedule.settings.parent / 'status.json')
+        def download(version, path, progress=None):
+            if version == 4:
+                raise OSError('offline')
+            path.write_bytes(csv_data(version))
+        with patch('bmgeoip.interface.DownloadRunner.DataLoader', return_value=loader), \
+                patch('bmgeoip.activity.DataLoader.GeoIpSource') as source:
             self.assertTrue(run())
             source.assert_not_called()
             self.schedule.update(True, '0 3 * * 0')
-            source.return_value.download.side_effect = [OSError('offline'), None]
-            self.assertFalse(run())
-            self.assertEqual(source.return_value.download.call_args_list,
-                             [unittest.mock.call(4, self.schedule.directory / 'ipv4.csv'),
-                              unittest.mock.call(6, self.schedule.directory / 'ipv6.csv')])
+            source.return_value.download.side_effect = download
+            with self.assertLogs(level='ERROR'):
+                self.assertFalse(run())
+            self.assertEqual([call.args for call in source.return_value.download.call_args_list],
+                             [(4, self.schedule.directory / 'ipv4.csv'),
+                              (6, self.schedule.directory / 'ipv6.csv')])
+            self.assertEqual(loader.read()['phase'], 'error')
 
     def test_overlapping_dispatch_skips_download(self):
         self.schedule.update(True, '0 3 * * 0')
         with self.schedule.settings.with_suffix('.download.lock').open('a') as stream:
             fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            with patch('bmgeoip.interface.DownloadRunner.DownloadSchedule', return_value=self.schedule), \
-                    patch('bmgeoip.interface.DownloadRunner.GeoIpSource') as source:
+            loader = DataLoader(self.schedule)
+            with patch('bmgeoip.interface.DownloadRunner.DataLoader', return_value=loader), \
+                    patch('bmgeoip.activity.DataLoader.GeoIpSource') as source:
                 self.assertTrue(run())
                 source.assert_not_called()
 

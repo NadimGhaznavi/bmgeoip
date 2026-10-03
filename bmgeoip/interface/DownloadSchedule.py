@@ -77,8 +77,11 @@ class DownloadSchedule:
             tab = CronTab(user=True)
             tab.remove_all(comment=self.COMMENT)
             if enabled:
-                command = shlex.join([DBMGeoIP.BASE_DIR + '/.venv/bin/python', '-B',
-                                      DBMGeoIP.BASE_DIR + '/bmgeoip-download.py'])
+                arguments = [DBMGeoIP.BASE_DIR + '/.venv/bin/python', '-B',
+                             DBMGeoIP.BASE_DIR + '/bmgeoip-download.py']
+                if self.settings.parent != Path(DBMGeoIP.SERVICE_HOME):
+                    arguments.extend(['--state-dir', str(self.settings.parent.resolve())])
+                command = shlex.join(arguments)
                 command += ' >> ' + shlex.quote(str(self.settings.parent / 'download.log')) + ' 2>&1'
                 job = tab.new(command=command.replace('%', r'\%'), comment=self.COMMENT)
                 job.setall(values['expression'])

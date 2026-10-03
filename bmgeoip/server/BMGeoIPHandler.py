@@ -9,6 +9,7 @@ from urllib.parse import urlsplit
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
 
 from bmgeoip.constants.DBMGeoIP import DBMGeoIP
+from bmgeoip.activity.DataLoader import DataLoader
 from bmgeoip.interface.DownloadSchedule import DownloadSchedule
 
 
@@ -51,7 +52,7 @@ class BMGeoIPHandler(BaseHTTPRequestHandler):
             values = json.loads(self.rfile.read(length))
             if not isinstance(values, dict) or set(values) != {'enabled', 'expression'}:
                 raise ValueError('Provide enabled and expression settings.')
-            schedule = DownloadSchedule().update(**values)
+            schedule = self.downloads().update(**values)
         except (ValueError, UnicodeError) as error:
             self.respond(400, json.dumps({'error': str(error)}).encode(), 'application/json')
             return
@@ -65,7 +66,7 @@ class BMGeoIPHandler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path == "/":
             try:
-                downloads = DownloadSchedule()
+                downloads = self.downloads()
                 body = TEMPLATES.get_template("home.html").render(
                     version=DBMGeoIP.VERSION, schedule=downloads.read(), files=downloads.files())
             except (OSError, ValueError):
@@ -73,6 +74,15 @@ class BMGeoIPHandler(BaseHTTPRequestHandler):
                 self.respond(503, b'{"error":"Download settings are unavailable. Check the service log."}', 'application/json')
                 return
             self.respond(200, body.encode("utf-8"), "text/html; charset=utf-8")
+        elif path == '/api/data-status':
+            try:
+                loader = getattr(self.server, 'data_loader', None)
+                values = (loader if loader is not None else DataLoader()).read()
+            except (OSError, ValueError):
+                logging.exception('Could not read dataset progress')
+                self.respond(503, b'{"error":"Dataset progress is unavailable. Check the service log."}', 'application/json')
+                return
+            self.respond(200, json.dumps(values).encode(), 'application/json')
         elif path in ("/health", "/ready"):
             status = "ok" if path == "/health" else "ready"
             body = json.dumps({"status": status, "service": "bmgeoip-server"}).encode()
@@ -85,6 +95,10 @@ class BMGeoIPHandler(BaseHTTPRequestHandler):
             self.respond(200, (SERVER_DIR.parents[1] / "pages/images/bmgeoip.png").read_bytes(), "image/png")
         else:
             self.respond(404, b'{"error":"Not found."}', "application/json")
+
+    def downloads(self) -> DownloadSchedule:
+        loader = getattr(self.server, 'data_loader', None)
+        return loader.schedule if loader is not None else DownloadSchedule()
 
     def respond(self, status: int, body: bytes, content_type: str) -> None:
         self.send_response(status)

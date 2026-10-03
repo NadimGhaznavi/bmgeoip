@@ -24,6 +24,12 @@
     <p>Web interface running · Version {{ version }}</p>
   </header>
   <main id="downloads">
+    <section class="panel" aria-labelledby="data-heading">
+      <h2 id="data-heading">Dataset Progress</h2>
+      <progress id="data-progress" aria-label="Dataset progress"></progress>
+      <p id="data-status" role="status">Checking dataset progress…</p>
+      <noscript>Enable JavaScript to see live progress, or open <a href="/api/data-status">dataset status</a>.</noscript>
+    </section>
     <section class="panel" aria-labelledby="schedule-heading">
       <h2 id="schedule-heading">CSV Download Schedule</h2>
       <p class="muted">Download the IPv4 and IPv6 datasets from ipapi.is on a recurring schedule.</p>

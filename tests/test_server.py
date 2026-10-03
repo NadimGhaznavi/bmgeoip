@@ -7,12 +7,17 @@ from pathlib import Path
 import select
 import subprocess
 import sys
+import time
+from tempfile import TemporaryDirectory
 from threading import Thread
 import unittest
 from unittest.mock import patch
 
 from bmgeoip.constants.DBMGeoIP import DBMGeoIP
 from bmgeoip.server.BMGeoIPHandler import BMGeoIPHandler
+from bmgeoip.activity.DataLoader import DataLoader
+from bmgeoip.interface.DownloadSchedule import DownloadSchedule
+from test_geoip_source import csv_data
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -79,6 +84,22 @@ class HTTPTests(unittest.TestCase):
             self.assertEqual(status, 404)
             self.assertEqual(json.loads(body), {'error': 'Not found.'})
 
+    def test_data_status_reads_shared_progress_and_handles_storage_failure(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            loader = DataLoader(DownloadSchedule(root / 'schedule.json', root / 'data'),
+                                root / 'geoip.db', root / 'status.json')
+            self.server.data_loader = loader
+            self.assertEqual(json.loads(self.request('/api/data-status')[2])['phase'], 'waiting')
+            loader._report('downloading', 6, 1024, 2048, force=True)
+            status, _, body = self.request('/api/data-status')
+            self.assertEqual(status, 200)
+            self.assertEqual(json.loads(body), loader.read())
+            self.assertEqual(self.request('/api/data-status', 'HEAD')[2], b'')
+            loader.status.write_text('{broken')
+            with self.assertLogs(level='ERROR'):
+                self.assertEqual(self.request('/api/data-status')[0], 503)
+
     def test_schedule_save_and_failure_responses(self):
         values = {'enabled': True, 'expression': '0 3 * * 0'}
         with patch('bmgeoip.server.BMGeoIPHandler.DownloadSchedule') as scheduler:
@@ -122,12 +143,18 @@ class LifecycleTests(unittest.TestCase):
             self.assertIn(b'error:', result.stderr)
 
     def test_sigterm_exits_cleanly(self):
+        temporary = TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        state = Path(temporary.name)
+        (state / 'data').mkdir()
+        for version in (4, 6):
+            (state / 'data' / f'ipv{version}.csv').write_bytes(csv_data(version))
         # Reserve a free port and release it immediately before startup.
         with ThreadingHTTPServer(('127.0.0.1', 0), BMGeoIPHandler) as reservation:
             port = reservation.server_port
         process = subprocess.Popen(
             [sys.executable, '-B', str(ROOT / 'bmgeoip-server.py'),
-             '--host', '127.0.0.1', '--port', str(port)],
+             '--host', '127.0.0.1', '--port', str(port), '--state-dir', str(state)],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
         try:
@@ -139,6 +166,19 @@ class LifecycleTests(unittest.TestCase):
                 self.assertEqual(connection.getresponse().status, 200)
             finally:
                 connection.close()
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                connection = HTTPConnection('127.0.0.1', port, timeout=5)
+                try:
+                    connection.request('GET', '/api/data-status')
+                    result = json.loads(connection.getresponse().read())
+                finally:
+                    connection.close()
+                if result['phase'] == 'ready':
+                    break
+                time.sleep(0.05)
+            self.assertEqual(result['phase'], 'ready')
+            self.assertTrue((state / 'geoip.sqlite3').is_file())
             process.terminate()
             output, errors = process.communicate(timeout=5)
             self.assertEqual(process.returncode, 0, errors.decode())
