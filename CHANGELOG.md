@@ -6,6 +6,8 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-03 @ 08:22
+
 - Fix release tooling to update BMGeoIP's version constant and use BMGeoIP
   names in help and error messages.
 
