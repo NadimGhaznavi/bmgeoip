@@ -166,9 +166,10 @@ class HTTPTests(unittest.TestCase):
                     status, _, body = self.request('/api/lookup?ip=' + address)
                     self.assertEqual(status, 200)
                     self.assertEqual(json.loads(body)['results'], [])
-                db.execute('INSERT INTO GeoIp SELECT ip_version, ?, ?, continent, country_code, '
-                           'country, state, city, zip, timezone, latitude, longitude, accuracy, source '
-                           'FROM GeoIp WHERE ip_version = ?', ('8.8.8.8', '8.8.8.8', '4'))
+                nested = csv_data(changes={'start_ip': '8.8.8.8', 'end_ip': '8.8.8.8'})
+                path = root / 'ipv4.csv'
+                path.write_bytes(csv_data() + nested.split(b'\n', 1)[1])
+                records.load(4, path)
                 self.assertEqual(len(json.loads(self.request('/api/lookup?ip=8.8.8.8')[2])['results']), 2)
                 self.assertEqual(self.request('/api/lookup?ip=8.8.8.8', 'HEAD')[2], b'')
             finally:

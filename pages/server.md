@@ -122,9 +122,17 @@ IPv6 zone IDs, duplicate parameters, and extra parameters return HTTP 400 with a
 database returns HTTP 503 with an `error` message. The form shows these raw error
 responses too. Without JavaScript, submitting opens the JSON endpoint directly.
 
-Each request opens and closes its own read-only database connection. Lookups scan
-the requested family's ranges using numeric address comparisons; response time
-depends on dataset size. Committed records remain usable after a failed refresh.
+Each request opens and closes its own read-only database connection. SQLite uses
+an index on the IP family and each range's smallest enclosing network prefix to
+find candidates, then compares stored packed endpoints in SQL. This avoids
+converting and scanning every provider range for each request. The browser retains
+its 30-second request timeout.
+
+Startup upgrades existing databases in bounded batches, preserving provider text
+and committed import metadata. This one-time index build can delay dataset readiness;
+lookups may return HTTP 503 until it completes. Unchanged CSVs still skip import.
+Range keys and endpoints are replaced atomically with provider records on refresh,
+so committed lookup records remain usable after a failed refresh.
 
 ## Status messages
 

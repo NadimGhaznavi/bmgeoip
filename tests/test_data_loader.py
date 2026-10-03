@@ -1,6 +1,7 @@
 """Verify startup, imports, persisted progress, and refresh failure preservation."""
 
 from io import BytesIO
+from ipaddress import ip_address
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Event
@@ -73,6 +74,11 @@ class DataLoaderTests(unittest.TestCase):
     def test_failed_import_rolls_back_deleted_and_inserted_records_and_metadata(self):
         self.seed()
         self.assertTrue(self.loader.run())
+        db = DbMgr(self.loader.database, readonly=True)
+        try:
+            previous = GeoIpDb.lookup(db, ip_address('8.8.8.8'))
+        finally:
+            db.close()
         path = self.schedule.directory / 'ipv4.csv'
         # A malformed tail must roll back earlier full batches as well as the DELETE.
         data = csv_data(changes={'country': 'Replacement'})
@@ -83,6 +89,11 @@ class DataLoaderTests(unittest.TestCase):
         rows = self.query('SELECT country FROM GeoIp WHERE ip_version = ?', ('4',))
         self.assertEqual(rows, [{'country': 'Canada'}])
         self.assertEqual(self.query('SELECT records FROM GeoIpImport WHERE version = 4'), [{'records': 1}])
+        db = DbMgr(self.loader.database, readonly=True)
+        try:
+            self.assertEqual(GeoIpDb.lookup(db, ip_address('8.8.8.8')), previous)
+        finally:
+            db.close()
         self.assertEqual(self.loader.read()['phase'], 'error')
         self.assertTrue(any('IPv4 dataset failed' in entry['message']
                             for entry in self.loader.status_messages.snapshot()))
