@@ -14,6 +14,14 @@ The **Bear & Moose GeoIP Project** provides an *easy-to-use* GeoIP service for y
 - Provides a [web interface](/pages/images/web-interface.png) for interactive IP lookups at [https://localhost:54300](https://localhost:54300) and for configuring the download schedule.
 - Accepts application lookup requests through **ZeroMQ** and **HTTP**.
 
+---
+
+## Web Interface Gallery
+
+- [Gallery]({{ site.baseurl }}{% link pages/gallery.md %})
+
+---
+
 ## Project Documents
 
 - [Server setup]({{ site.baseurl }}{% link pages/server.md %})
