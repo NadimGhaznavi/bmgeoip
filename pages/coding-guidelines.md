@@ -1,118 +1,152 @@
+```markdown
 ---
 title: Coding Guidelines
 ---
 
 [Documentation index]({{ site.baseurl }}{% link index.md %})
 
-Bear & Moose GeoIP should be easy to navigate, understand, and maintain. Keep the project
-lean and build for the workflows that exist now. Prefer simple Markdown and
-the shared theme's existing layouts to custom code or duplicated assets.
+These are BMGeoIP's development standards. MUST identifies a requirement;
+SHOULD identifies a default whose exceptions need a concrete reason.
 
-## Respect development and release ownership
+## Ownership and scope
 
-The AI coding assistant is the lead developer and handles implementation,
-checks, and documentation within the architecture and standards set by the
-project owner. The project owner is the architect and release manager.
-The assistant may perform Git operations and run release scripts as part of
-the authorized workflow.
+The project owner is the architect and release manager. The AI assistant is
+the lead developer, responsible for implementation, verification, and documentation.
 
-## Organize by responsibility
+Changes MUST follow the owner's architecture and the requested scope.
+Preserve existing behavior unless the task requires changing it.
+Do not expand a task into an unrelated refactor.
 
-- `index.md` is the sole documentation root.
-- `pages/` contains project guides and documentation images.
-- `_config.yml` holds Jekyll settings and site-wide layout defaults.
-- `scripts/` contains maintenance tooling.
-- `bmgeoip/` contains Python code; `bmgeoip/constants/` holds project constants.
-- `bmgeoip/interface/` owns database and external-service interfaces;
-  `bmgeoip/activity/` coordinates background workflows, and `bmgeoip/server/`
-  owns HTTP routes, templates, and service lifecycle.
-- `DBMGeoIP.VERSION` in `bmgeoip/constants/DBMGeoIP.py` holds the project version as a
-  literal string.
-- `CHANGELOG.md` records user-visible changes and releases.
+ANY edits to files outside of the repository MUST be approved by the user.
 
-The shared `NadimGhaznavi/minimal-mistakes` theme owns the site's presentation.
-Keep GeoIP-specific settings in this repository. Introduce local layout or asset
-overrides only when a requirement calls for them.
+Git operations and release scripts may be used within the authorized workflow.
 
-The HTTP service runs under Linux systemd, downloads and imports GeoIP CSVs,
-and refreshes them on a configurable schedule. HTTP IP lookups search imported
-records; a separate ZMQ REP worker dispatches lookups through the same lookup
-interface. `bmgeoip/zmq/` owns the message envelope and transport. Do not document
-planned components as existing code.
+## Architecture
 
-## Data access layer (DAL)
+- Each component MUST have a clear responsibility and resource owner.
+- Transport, domain rules, persistence, background workflows, and presentation
+  MUST remain separate.
+- Dependencies SHOULD use narrow interfaces or injected callables.
+- Construct and connect resources at explicit application entry points.
+- Reuse sound distributed patterns where they provide clear ownership or reuse.
+- Introduce abstractions and services only for demonstrated requirements.
 
-Follow CMDB's separation of database mechanics and domain queries. Keep connection,
-bound-query, batch, and transaction mechanics in `bmgeoip/interface/DbMgr.py`.
-Domain interfaces such as `GeoIpDb.py` own their schema and application SQL.
-Background activities coordinate downloads and imports; HTTP handlers and
-templates must not execute SQL.
+Where an authoritative model or specification is adopted, implementations MUST
+preserve its semantics. Verify inheritance, relationships, and cardinalities
+against that source. Do not substitute an ad-hoc schema for the accepted model.
 
-Each worker owns its database connection and closes it when finished. Never
-share a connection between request threads or with a background worker. Use
-bound parameters for external values; interpolate identifiers only from trusted
-project constants. Materialize query results inside the DAL and close cursors
-before returning them.
+CWM-based work MUST use OMG CWM 1.1 as its authority. CWM is not required for
+unrelated application data.
 
-The current DAL uses MariaDB through PyMySQL, with connection settings in
-`/etc/bmgeoip/database.env`; it follows CMDB's interface pattern. Use InnoDB
-transactions and keep database provisioning separate from schema creation. Preserve all fourteen
-provider fields as text, including IPv6 addresses, empty strings, Unicode, and
-postal-code leading zeros. Stream CSV validation and insert bounded batches.
-Replace each IP family's records and import metadata in one explicit transaction.
-A failed import must roll back to the last usable database records. Keep schema
-creation outside import transactions and skip unchanged CSVs using committed
-import metadata. Verify initial import, both IP families, restart behavior,
-refresh replacement, and rollback after a malformed CSV tail.
+## Project structure
 
-## Keep documentation focused
+| Location | Responsibility |
+| --- | --- |
+| `index.md` | Sole documentation root |
+| `pages/` | Guides and documentation images |
+| `_config.yml` | Jekyll configuration |
+| `scripts/` | Maintenance and release tooling |
+| `bmgeoip/constants/` | Project constants |
+| `bmgeoip/interface/` | Database and external-service interfaces |
+| `bmgeoip/activity/` | Background workflows |
+| `bmgeoip/server/` | HTTP handling and service lifecycle |
+| `bmgeoip/zmq/` | Message envelopes and transport |
+| `CHANGELOG.md` | User-visible changes |
 
-Keep `README.md` as a short project overview with a pointer to
-[bmgeoip.osoyalce.com](https://bmgeoip.osoyalce.com), without duplicating navigation.
-Every documentation page must be reachable by following links from `index.md`,
-directly or through another reachable page. Update links when adding or moving
-content.
+`DBMGeoIP.VERSION` MUST remain a literal string in
+`bmgeoip/constants/DBMGeoIP.py`.
 
-Give each page YAML front matter with a lowercase `title` key and one clear
-purpose. Use Jekyll's `link` tag for internal page links, prefixed with
-`site.baseurl` as on the documentation index. Use fenced blocks for commands
-and configuration examples, and tables for structured references.
+The shared theme owns site presentation. Local overrides SHOULD be added only
+for a specific requirement.
 
-Document implemented behavior and verified commands. Distinguish examples from
-the current network configuration and identify incomplete or outdated records.
-Keep credentials, tokens, and other secrets out of this public site.
+## Data access
 
-## Make reviewable changes
+- `DbMgr.py` MUST own connection, cursor, batch, and transaction mechanics.
+- Domain interfaces such as `GeoIpDb.py` MUST own application SQL and schema.
+- HTTP handlers, templates, and ZMQ transport MUST NOT execute SQL.
+- Each worker MUST own and close its database connection.
+- Connections MUST NOT be shared between request threads or background workers.
+- External values MUST use bound parameters. Dynamic identifiers MUST come
+  from trusted project constants.
+- Query results MUST be materialized and cursors closed before returning.
 
-Keep ZMQ request handling, GeoIP lookups, provider downloads, and service
-lifecycle code separate as they are introduced. Validate IP addresses and
-external configuration at the boundary. Define request and response formats,
-including invalid input and unavailable lookup data, and document them alongside
-the implementation. Let internal programming errors surface.
+Use MariaDB through PyMySQL and InnoDB transactions. Keep database provisioning
+separate from application schema creation.
 
-Use explicit timeouts for network operations. Validate downloaded GeoIP data
-before replacing the active dataset, and preserve the last usable dataset when
-a refresh fails. Keep provider URLs, refresh schedules, and data paths in
-configuration rather than scattering them through application code.
+Preserve all fourteen provider fields as text. Validate CSVs while streaming
+and insert bounded batches. Replace each IP family's records and import metadata
+in one transaction. Failed imports MUST preserve the previous usable records.
 
-When adding or changing service behavior, run the relevant Python checks and
-cover lookup results, invalid requests, and refresh failures as appropriate.
-Document verified setup and test commands when the service environment is
-established. Service checks are separate from the GitHub Pages build.
+Keep schema creation outside import transactions. Skip unchanged CSVs using
+committed import metadata.
 
-Keep each change coherent. When moving a page, update incoming links and check
-its generated URL. Preserve existing behavior unless the task calls for a change.
-GitHub Pages builds the site. Do not add a Gemfile or require local Jekyll
-builds. Keep generated site output out of source control.
+## ZMQ and external interfaces
 
-Check YAML front matter and confirm that internal link targets exist. Verify
-page titles, navigation, rendered tables, code blocks, and theme assets
-when changing presentation. Report checks that could not be run.
+Transport MUST accept configuration and injected handlers without importing
+database or workflow implementations.
 
-## Update the changelog
+Envelope validation, routing, and domain validation MUST have distinct owners.
+HTTP and ZMQ MUST use the same authoritative lookup interface.
 
-Record meaningful changes under `## [Unreleased]` in `CHANGELOG.md`. For changes
-with many details, add a `### Summary` explaining the problem and solution in
-one or two sentences. Release tooling must update `DBMGeoIP.VERSION` and assign
-the changelog version and timestamp. Before using `scripts/new-release.sh`,
-verify that its version-file path and release messages match this project.
+Document implemented request and response contracts, including invalid input
+and unavailable data. Preserve protocol compatibility; incompatible changes
+require an explicit version or migration.
+
+- Network operations MUST have explicit timeouts.
+- Sockets MUST remain within their owning thread.
+- Owned resources MUST be closed; borrowed contexts MUST remain available.
+- Long-running work MUST execute outside request handlers.
+- Mutating requests MUST NOT be automatically retried without defined
+  server-side idempotency.
+- PUB/SUB notifications MUST NOT be described as guaranteed delivery.
+
+Validate downloads before replacing datasets. Keep endpoints, paths, and
+schedules in configuration.
+
+Expected input and availability errors MUST produce defined responses.
+Programming errors and failed workers MUST surface to the service supervisor.
+
+## Documentation
+
+Public documentation MUST be short, direct, and task-focused.
+
+Include only what readers need to install, use, or develop the software.
+Omit implementation narration, repeated explanations, development history,
+and speculative features. Put detailed contracts in one reference and link to it.
+
+- Keep `README.md` to a brief overview and website link.
+- Every page MUST be reachable from `index.md`.
+- Give each page one purpose and YAML front matter with a `title` key.
+- Use `site.baseurl` and Jekyll's `link` tag for internal page links.
+- Use fenced examples and tables where useful.
+- Document verified behavior and commands.
+- Credentials and secrets MUST NOT appear in the public site.
+
+## Verification and review
+
+Run checks appropriate to the change. Database changes MUST cover initial import,
+IPv4/IPv6, unchanged-file handling, refresh replacement, and rollback after
+malformed input. Service changes MUST cover relevant success and failure paths.
+
+Review architectural changes with `$review-architecture` when available.
+These standards apply whether or not the skill is installed.
+
+Reviews MUST identify concrete evidence, consequences, and bounded corrections.
+Trace a normal operation and a relevant failure path. Distinguish defects from
+preferences; passing tests alone does not establish architectural correctness.
+
+Check documentation front matter, link targets, and navigation.
+Inspect rendered output when presentation changes.
+
+GitHub Pages builds the site. Do not add a Gemfile, require local Jekyll builds,
+or commit generated site output. Report checks that could not be run.
+
+## Changelog and releases
+
+Record meaningful changes under `## [Unreleased]` in `CHANGELOG.md`.
+Keep entries focused on user-visible outcomes.
+
+Release tooling MUST update `DBMGeoIP.VERSION` and assign the changelog version
+and timestamp. Verify project paths and release messages before running
+`scripts/new-release.sh`.
+```
