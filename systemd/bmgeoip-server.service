@@ -1,0 +1,20 @@
+[Unit]
+Description=Bear & Moose GeoIP web server
+After=network.target
+
+[Service]
+Type=simple
+User=@USER@
+Group=@USER@
+WorkingDirectory=@APP@
+ExecStart=@APP@/.venv/bin/python -B -u @APP@/bmgeoip-server.py
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target
