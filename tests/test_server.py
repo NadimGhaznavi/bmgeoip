@@ -11,7 +11,11 @@ import time
 from tempfile import TemporaryDirectory
 from threading import Thread
 import unittest
+
+from database_support import database_settings
 from unittest.mock import patch
+
+import zmq
 
 from bmgeoip.constants.DBMGeoIP import DBMGeoIP
 from bmgeoip.server.BMGeoIPHandler import BMGeoIPHandler
@@ -103,7 +107,7 @@ class HTTPTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             root = Path(directory)
             loader = DataLoader(DownloadSchedule(root / 'schedule.json', root / 'data'),
-                                root / 'geoip.db', root / 'status.json')
+                                database_settings(self, root / 'database.env'), root / 'status.json')
             self.server.data_loader = loader
             self.assertEqual(json.loads(self.request('/api/data-status')[2])['phase'], 'waiting')
             loader._report('downloading', 6, 1024, 2048, force=True)
@@ -141,11 +145,10 @@ class HTTPTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             root = Path(directory)
             loader = DataLoader(DownloadSchedule(root / 'schedule.json', root / 'data'),
-                                root / 'geoip.db', root / 'status.json')
+                                database_settings(self, root / 'database.env'), root / 'status.json')
             self.server.data_loader = loader
             with self.assertLogs(level='ERROR'):
                 self.assertEqual(self.request('/api/lookup?ip=8.8.8.8')[0], 503)
-            self.assertFalse(loader.database.exists())
             db = DbMgr(loader.database)
             try:
                 records = GeoIpDb(db)
@@ -232,7 +235,9 @@ class LifecycleTests(unittest.TestCase):
             port = reservation.server_port
         process = subprocess.Popen(
             [sys.executable, '-B', str(ROOT / 'bmgeoip-server.py'),
-             '--host', '127.0.0.1', '--port', str(port), '--state-dir', str(state)],
+             '--host', '127.0.0.1', '--port', str(port), '--state-dir', str(state),
+              '--database-env', str(database_settings(self, state / 'database.env')),
+             '--zmq-endpoint', 'tcp://127.0.0.1:*'],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
         try:
@@ -256,10 +261,24 @@ class LifecycleTests(unittest.TestCase):
                     break
                 time.sleep(0.05)
             self.assertEqual(result['phase'], 'ready')
-            self.assertTrue((state / 'geoip.sqlite3').is_file())
+            db = DbMgr(state / 'database.env')
+            try:
+                self.assertEqual(len(db.query('SELECT * FROM GeoIpImport')), 2)
+            finally:
+                db.close()
             messages = StatusMessages(state / 'status-messages.json').snapshot()
             self.assertTrue(any('HTTP listener ready' in entry['message'] for entry in messages))
             self.assertTrue(any('Both datasets loaded' in entry['message'] for entry in messages))
+            endpoint = next(entry['message'].split(' on ', 1)[1].rstrip('.')
+                            for entry in messages if 'ZMQ lookup listener ready' in entry['message'])
+            with zmq.Context() as context, context.socket(zmq.REQ) as socket:
+                socket.setsockopt(zmq.LINGER, 0)
+                socket.setsockopt(zmq.SNDTIMEO, 2000)
+                socket.setsockopt(zmq.RCVTIMEO, 2000)
+                socket.connect(endpoint)
+                socket.send_json({'protocol_version': 1, 'sender': 'test', 'target': 'bmgeoip',
+                                  'method': 'lookup', 'payload': {'ip': '8.8.8.8'}})
+                self.assertEqual(socket.recv_json()['payload']['results'][0]['zip'], '00123')
             process.terminate()
             output, errors = process.communicate(timeout=5)
             self.assertEqual(process.returncode, 0, errors.decode())

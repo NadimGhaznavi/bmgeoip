@@ -5,7 +5,7 @@ import fcntl
 import json
 import logging
 from pathlib import Path
-import sqlite3
+import pymysql
 from tempfile import NamedTemporaryFile
 from threading import Thread
 from time import monotonic
@@ -20,7 +20,7 @@ from bmgeoip.interface.StatusMessages import StatusMessages
 
 
 class DataLoader:
-    def __init__(self, schedule=None, database: Path = Path(DGeoIp.DATABASE_FILE),
+    def __init__(self, schedule=None, database: Path = Path(DGeoIp.DATABASE_ENV),
                  status: Path = Path(DGeoIp.STATUS_FILE)) -> None:
         self.schedule = schedule if schedule is not None else DownloadSchedule()
         self.database = Path(database)
@@ -74,7 +74,6 @@ class DataLoader:
                         self.status_messages.append('Scheduled refresh skipped: downloads are disabled.')
                         return True
             self.schedule.directory.mkdir(parents=True, exist_ok=True)
-            self.database.parent.mkdir(parents=True, exist_ok=True)
             self.status.parent.mkdir(parents=True, exist_ok=True)
             self._report('checking', message='Checking GeoIP datasets.', force=True)
             db = None
@@ -103,7 +102,7 @@ class DataLoader:
                         self.status_messages.append(f'IPv{version} dataset ready: {count:,} records.')
                         counts[version] = count
                         logging.info('IPv%s dataset ready: %s records.', version, count)
-                    except (OSError, ValueError, csv.Error, BadZipFile, KeyError, sqlite3.Error):
+                    except (OSError, ValueError, csv.Error, BadZipFile, KeyError, pymysql.MySQLError):
                         logging.exception('IPv%s dataset initialization failed.', version)
                         self.status_messages.append(f'IPv{version} dataset failed; previous committed records are preserved. Check the service log.')
                         errors.append(f'IPv{version} failed. Check the service log and restart to retry.')
@@ -111,7 +110,7 @@ class DataLoader:
                     f'IPv{version}: {count:,} records' for version, count in counts.items()) + '.'
                 self._report('error' if errors else 'ready', message=message, force=True)
                 return not errors
-            except (OSError, sqlite3.Error):
+            except (OSError, pymysql.MySQLError):
                 logging.exception('GeoIP database initialization failed.')
                 self._report('error', message='Database initialization failed. Check the service log.', force=True)
                 return False
