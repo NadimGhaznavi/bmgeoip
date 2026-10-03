@@ -6,6 +6,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Event
 import unittest
+
+from database_support import database_settings
 from unittest.mock import patch
 
 from bmgeoip.activity.DataLoader import DataLoader
@@ -22,7 +24,8 @@ class DataLoaderTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
         self.schedule = DownloadSchedule(self.root / 'schedule.json', self.root / 'data')
-        self.loader = DataLoader(self.schedule, self.root / 'geoip.db', self.root / 'status.json')
+        self.loader = DataLoader(self.schedule, database_settings(self, self.root / 'database.env'),
+                                 self.root / 'status.json')
 
     def seed(self):
         self.schedule.directory.mkdir(exist_ok=True)
@@ -86,7 +89,7 @@ class DataLoaderTests(unittest.TestCase):
         path.write_bytes(header + b'\n' + row * 1100 + b'4,invalid\n')
         with self.assertLogs(level='ERROR'):
             self.assertFalse(self.loader.run())
-        rows = self.query('SELECT country FROM GeoIp WHERE ip_version = ?', ('4',))
+        rows = self.query('SELECT country FROM GeoIp WHERE ip_version = %s', ('4',))
         self.assertEqual(rows, [{'country': 'Canada'}])
         self.assertEqual(self.query('SELECT records FROM GeoIpImport WHERE version = 4'), [{'records': 1}])
         db = DbMgr(self.loader.database, readonly=True)

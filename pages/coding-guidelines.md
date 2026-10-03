@@ -36,7 +36,9 @@ overrides only when a requirement calls for them.
 
 The HTTP service runs under Linux systemd, downloads and imports GeoIP CSVs,
 and refreshes them on a configurable schedule. HTTP IP lookups search imported
-records; ZMQ messaging is planned. Do not document planned components as existing code.
+records; a separate ZMQ REP worker dispatches lookups through the same lookup
+interface. `bmgeoip/zmq/` owns the message envelope and transport. Do not document
+planned components as existing code.
 
 ## Data access layer (DAL)
 
@@ -52,8 +54,9 @@ bound parameters for external values; interpolate identifiers only from trusted
 project constants. Materialize query results inside the DAL and close cursors
 before returning them.
 
-The current DAL uses SQLite at `/var/lib/bmgeoip/geoip.sqlite3`; it follows CMDB's
-interface pattern without requiring CMDB's MariaDB service. Preserve all fourteen
+The current DAL uses MariaDB through PyMySQL, with connection settings in
+`/etc/bmgeoip/database.env`; it follows CMDB's interface pattern. Use InnoDB
+transactions and keep database provisioning separate from schema creation. Preserve all fourteen
 provider fields as text, including IPv6 addresses, empty strings, Unicode, and
 postal-code leading zeros. Stream CSV validation and insert bounded batches.
 Replace each IP family's records and import metadata in one explicit transaction.

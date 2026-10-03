@@ -6,6 +6,27 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-03 @ 18:12
+
+- Website homepage updates.
+
+- Align storage and setup documentation with MariaDB, consolidate HTTP and ZMQ
+  contracts in the API reference, and document all fourteen provider fields with
+  a populated example. Clarify explicit legacy migration and installer limits.
+
+- Main page rewrite.
+
+- Move IP address lookup and ZeroMQ request documentation into separate guides,
+  and name the ZeroMQ guide BMGeoIP ZMQ API.
+
+- Split server setup and development into separate guides, linked from the
+  documentation index.
+
+- Add a modular ZMQ lookup worker on `tcp://0.0.0.0:54301`, using AX3L's
+  versioned JSON envelope and the shared IPv4/IPv6 lookup interface. Report
+  invalid requests and unavailable data, manage worker startup/shutdown with
+  HTTP, and document the protocol and client timeouts.
+
 ## [0.4.1] - 2026-10-03 @ 11:11
 
 - Fix IP lookup timeouts by indexing numeric range prefixes and matching packed

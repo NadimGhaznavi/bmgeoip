@@ -1,49 +1,57 @@
-"""SQLite connection and transaction mechanics, following CMDB's DAL boundary."""
+"""MariaDB connection, bound queries, and transaction mechanics."""
 
 from contextlib import contextmanager
 from pathlib import Path
-import sqlite3
+
+import pymysql
+from pymysql.cursors import DictCursor
+
+from bmgeoip.constants.DGeoIp import DGeoIp
+from bmgeoip.interface.DatabaseEnvironment import DatabaseEnvironment
 
 
 class DbMgr:
     """Own one connection; create and close it within the worker using it."""
 
-    def __init__(self, path: Path, *, readonly=False) -> None:
-        target = Path(path).resolve().as_uri() + '?mode=ro' if readonly else path
-        self._connection = sqlite3.connect(target, uri=readonly, timeout=30, isolation_level=None)
-        self._connection.row_factory = sqlite3.Row
-
-    def register_function(self, name: str, arguments: int, function) -> None:
-        self._connection.create_function(name, arguments, function, deterministic=True)
+    def __init__(self, settings: Path = Path(DGeoIp.DATABASE_ENV), *, readonly=False) -> None:
+        values = DatabaseEnvironment.read(settings)
+        self._connection = pymysql.connect(
+            host=values['DB_HOST'], port=int(values['DB_PORT']),
+            user=values['DB_USER'], password=values['DB_PASSWORD'], database=values['DB_NAME'],
+            unix_socket=values.get('DB_SOCKET'), charset='utf8mb4', cursorclass=DictCursor,
+            autocommit=True, connect_timeout=10, read_timeout=30, write_timeout=30,
+            sql_mode='STRICT_ALL_TABLES,NO_ENGINE_SUBSTITUTION',
+        )
+        if readonly:
+            try:
+                self.execute('SET SESSION TRANSACTION READ ONLY')
+            except BaseException:
+                self.close()
+                raise
 
     def execute(self, sql: str, params=()) -> int:
-        cursor = self._connection.execute(sql, params)
-        try:
-            return cursor.rowcount
-        finally:
-            cursor.close()
+        with self._connection.cursor() as cursor:
+            return cursor.execute(sql, params)
 
     def execute_many(self, sql: str, rows) -> None:
-        cursor = self._connection.executemany(sql, rows)
-        cursor.close()
+        with self._connection.cursor() as cursor:
+            cursor.executemany(sql, rows)
 
     def query(self, sql: str, params=()) -> list[dict]:
-        cursor = self._connection.execute(sql, params)
-        try:
-            return [dict(row) for row in cursor.fetchall()]
-        finally:
-            cursor.close()
+        with self._connection.cursor() as cursor:
+            cursor.execute(sql, params)
+            return list(cursor.fetchall())
 
     @contextmanager
     def transaction(self):
-        """Commit related writes together; roll back every failed import."""
-        self.execute('BEGIN IMMEDIATE')
+        """Commit related writes together; keep DDL outside transactions."""
+        self._connection.begin()
         try:
             yield
-            self.execute('COMMIT')
+            self._connection.commit()
         except BaseException as error:
             try:
-                self.execute('ROLLBACK')
+                self._connection.rollback()
             except BaseException:
                 error.add_note('Database rollback also failed; discard this connection.')
             raise
