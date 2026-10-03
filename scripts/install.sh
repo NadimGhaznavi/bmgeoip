@@ -96,7 +96,7 @@ for endpoint, expected in (('health', 'ok'), ('ready', 'ready')):
     else:
         raise SystemExit('Health check failed; inspect journalctl -u ' + DBMGeoIP.SERVICE_UNIT)
 with opener.open(f'http://127.0.0.1:{DBMGeoIP.PORT}/', timeout=5) as response:
-    if response.status != 200 or b'Web interface running' not in response.read():
+    if response.status != 200 or b'Bear &amp; Moose GeoIP' not in response.read():
         raise SystemExit('Web interface check failed.')
 print(f'BMGeoIP server listening on port: {DBMGeoIP.PORT}')
 PY
