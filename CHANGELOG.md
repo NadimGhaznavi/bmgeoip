@@ -6,6 +6,11 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-03 @ 18:18
+
+- Add the Rebuild Jekyll Site GitHub Pages workflow, based on AX3L's build and
+  deployment workflow, with automatic builds on pushes to main and manual runs.
+
 ## [1.0.0] - 2026-10-03 @ 18:12
 
 - Website homepage updates.
