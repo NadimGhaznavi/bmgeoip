@@ -6,6 +6,12 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-03 @ 09:10
+
+- Add CMDB-style upgrade and uninstall scripts. Upgrades reuse installation and
+  preserve state; uninstallation removes the service, application, CSVs, settings,
+  logs, service account crontab, Linux account, and group.
+
 ## [0.1.2] - 2026-10-03 @ 08:30
 
 - Capture and verify the expected schedule-save error log in server tests so
