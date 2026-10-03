@@ -6,6 +6,8 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-03 @ 10:34
+
 - Rename the Downloads navigation link and page title to GeoIP.
 - Display CSV data file sizes in MB with two decimal places.
 - Remove the redundant “Web interface running” text from the download page header.
