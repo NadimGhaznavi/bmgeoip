@@ -6,6 +6,19 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+- Add a CMDB-style Status Messages box with Timestamp, Source, and Message
+  columns, live updates, and a shared bounded history covering startup,
+  scheduled refreshes, dataset processing, schedule changes, and failures.
+
+- Restore the theme's narrow left author sidebar on all documentation pages
+  by applying the single layout and author profile defaults to pages.
+- Download missing IPv4/IPv6 CSVs automatically at server startup, show live
+  download/validation/import progress, and import validated records into SQLite
+  after startup and scheduled downloads. Preserve previous records on failed
+  imports and skip unchanged CSVs on restart.
+- Add CMDB-style database mechanics and domain interfaces, DAL coding guidance,
+  and an isolated `--state-dir` option for development.
+
 ## [0.2.0] - 2026-10-03 @ 09:10
 
 - Add CMDB-style upgrade and uninstall scripts. Upgrades reuse installation and

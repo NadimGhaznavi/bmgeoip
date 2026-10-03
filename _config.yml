@@ -293,6 +293,13 @@ compress_html:
 
 # Defaults
 defaults:
+  # Documentation pages use the theme's narrow left author sidebar.
+  - scope:
+      path: ""
+      type: pages
+    values:
+      layout: single
+      author_profile: true
   # _posts
   - scope:
       path: ""

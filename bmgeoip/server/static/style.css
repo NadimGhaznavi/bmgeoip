@@ -46,3 +46,11 @@ button:disabled { opacity: .5; cursor: default; }
   header, .panel { padding: 1rem; }
   main { gap: .5rem; }
 }
+progress { width: 100%; accent-color: var(--accent); }
+
+.status-messages h2 { font-size: 1rem; color: var(--muted); margin: 0 0 .75rem; }
+#status-messages { height: calc(9em + 2px); line-height: 1.5; overflow: auto; border: 1px solid var(--border); background: var(--background); }
+.status-messages-table { border-collapse: separate; border-spacing: 0; }
+.status-messages-table th, .status-messages-table td { padding: 0 .6rem; white-space: nowrap; overflow-wrap: normal; border: 0; }
+.status-messages-table th { position: sticky; top: 0; background: var(--surface); }
+.status-messages-table th:nth-child(-n+2) { width: 1%; }

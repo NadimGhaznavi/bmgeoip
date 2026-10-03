@@ -7,6 +7,7 @@
   <link rel="icon" href="/pages/images/bmgeoip.png" type="image/png">
   <link rel="stylesheet" href="/static/style.css">
   <script defer src="/static/downloads.js"></script>
+  <script defer src="/static/status_messages.js"></script>
 </head>
 <body>
   <header>
@@ -24,6 +25,12 @@
     <p>Web interface running · Version {{ version }}</p>
   </header>
   <main id="downloads">
+    <section class="panel" aria-labelledby="data-heading">
+      <h2 id="data-heading">Dataset Progress</h2>
+      <progress id="data-progress" aria-label="Dataset progress"></progress>
+      <p id="data-status" role="status">Checking dataset progress…</p>
+      <noscript>Enable JavaScript to see live progress, or open <a href="/api/data-status">dataset status</a>.</noscript>
+    </section>
     <section class="panel" aria-labelledby="schedule-heading">
       <h2 id="schedule-heading">CSV Download Schedule</h2>
       <p class="muted">Download the IPv4 and IPv6 datasets from ipapi.is on a recurring schedule.</p>
@@ -62,5 +69,15 @@
       <p class="muted">Reload this page to refresh file status. GeoIP lookups are not available yet.</p>
     </section>
   </main>
+  <section class="panel status-messages" aria-labelledby="status-messages-title">
+    <h2 id="status-messages-title">Status Messages</h2>
+    <div id="status-messages" role="log" aria-live="polite" aria-relevant="additions" aria-label="Status Messages" tabindex="0">
+      <table class="status-messages-table" aria-label="Status Messages">
+        <thead><tr><th scope="col">Timestamp</th><th scope="col">Source</th><th scope="col">Message</th></tr></thead>
+        <tbody id="status-message-rows"></tbody>
+      </table>
+    </div>
+    <noscript>Enable JavaScript to see live messages, or open <a href="/status-messages">status history</a>.</noscript>
+  </section>
 </body>
 </html>

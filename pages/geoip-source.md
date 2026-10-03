@@ -24,12 +24,15 @@ source.download(4, directory / "ipv4.csv")
 source.download(6, directory / "ipv6.csv")
 ```
 
-`download(version, destination)` accepts integer versions 4 and 6 and a file
+`download(version, destination, progress=None)` accepts integer versions 4 and 6 and a file
 path whose parent directory already exists. It returns `None` after success.
 It streams downloads and extraction through temporary files beside the
 destination, validates the entire CSV, then atomically replaces that file.
 Temporary files are removed after success or failure. Each family is published
 independently; the scheduled runner attempts each family separately.
+An optional callback receives `(phase, completed, total)` for archive download
+bytes, extraction, and CSV validation record counts. `total` is `None` when
+unknown. Transfers with a mismatched HTTP Content-Length are rejected.
 
 Validation requires the expected fourteen-column header, complete rows, at least
 one range, valid ordered IP endpoints matching the requested family, and optional
@@ -60,5 +63,5 @@ both families, malformed data, interrupted transfers, and preservation of an
 existing dataset. They do not download the public datasets.
 
 The [server download schedule]({{ site.baseurl }}{% link pages/server.md %})
-uses this interface from an independent cron runner. Database import, IP lookup,
-and ZMQ clients are later phases.
+uses this interface at startup and from an independent cron runner, then imports
+the records through `GeoIpDb`. IP lookup and ZMQ clients are later phases.

@@ -8,6 +8,8 @@ from bmgeoip.constants.DBMGeoIP import DBMGeoIP
 class DGeoIp:
     DATA_DIR: Final[str] = DBMGeoIP.SERVICE_HOME + "/data"
     SCHEDULE_FILE: Final[str] = DBMGeoIP.SERVICE_HOME + "/download-schedule.json"
+    DATABASE_FILE: Final[str] = DBMGeoIP.SERVICE_HOME + "/geoip.sqlite3"
+    STATUS_FILE: Final[str] = DBMGeoIP.SERVICE_HOME + "/data-status.json"
     DOWNLOAD_CRON: Final[str] = "0 3 * * 0"
     URL: Final[str] = "https://raw.githubusercontent.com/ipapi-is/ipapi/main/databases/geolocationDatabaseIPv{version}.csv.zip"
     MEMBER: Final[str] = "geolocationDatabaseIPv{version}.csv"

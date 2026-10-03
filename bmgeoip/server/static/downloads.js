@@ -1,5 +1,31 @@
 "use strict";
 
+async function updateDataProgress() {
+  const progress = document.getElementById('data-progress');
+  const status = document.getElementById('data-status');
+  try {
+    const response = await fetch('/api/data-status', { signal: AbortSignal.timeout(10000) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    progress.hidden = ['ready', 'error'].includes(result.phase);
+    if (result.total > 0) {
+      progress.max = result.total;
+      progress.value = result.completed;
+    } else {
+      progress.removeAttribute('value');
+    }
+    const family = result.version ? `IPv${result.version}: ` : '';
+    const unit = result.phase === 'downloading' ? ' bytes' : ' records';
+    const count = result.completed ? ` · ${result.completed.toLocaleString()}${unit}` : '';
+    status.textContent = result.message || `${family}${result.phase}${count}`;
+  } catch (error) {
+    status.textContent = 'Could not read dataset progress. Retrying…';
+  } finally {
+    setTimeout(updateDataProgress, 2000);
+  }
+}
+updateDataProgress();
+
 const form = document.getElementById('download-schedule');
 form.addEventListener('submit', async event => {
   event.preventDefault();
