@@ -62,7 +62,7 @@
             <td>IPv{{ file.version }}</td>
             <td><code>{{ file.path }}</code></td>
             <td>{% if file.modified %}<time datetime="{{ file.modified }}">{{ file.modified }}</time>{% else %}Not downloaded yet{% endif %}</td>
-            <td>{{ '{:,}'.format(file.size) ~ ' bytes' if file.size is not none else '—' }}</td>
+            <td>{{ '{:,.2f}'.format(file.size / 1000000) ~ ' MB' if file.size is not none else '—' }}</td>
           </tr>{% endfor %}</tbody>
         </table>
       </div>

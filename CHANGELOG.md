@@ -6,6 +6,7 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+- Display CSV data file sizes in MB with two decimal places.
 - Remove the redundant “Web interface running” text from the download page header.
 
 ## [0.3.0] - 2026-10-03 @ 10:17
