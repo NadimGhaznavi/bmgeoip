@@ -6,6 +6,8 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+- Remove the redundant “Web interface running” text from the download page header.
+
 ## [0.3.0] - 2026-10-03 @ 10:17
 
 - Add a CMDB-style Status Messages box with Timestamp, Source, and Message
