@@ -40,9 +40,34 @@ No database is required for this web server foundation.
 Open `http://<server>:54300/`. The interface has no authentication and is
 intended for a trusted LAN. Installation does not change firewall rules.
 
-Rerun the installer from an updated checkout to update the service. It stops
+## Upgrade and uninstall
+
+From an updated checkout separate from `/opt/prod/bmgeoip`, run:
+
+```sh
+sudo scripts/upgrade.sh
+```
+
+The upgrade script reuses the installer and preserves downloaded CSVs, download
+settings, logs, and the existing cron schedule. It stops
 an existing service before updating dependencies and files. If installation
 fails, fix the reported error and rerun it; automatic rollback is not provided.
+
+To remove the deployment, run from the separate checkout:
+
+```sh
+sudo scripts/uninstall.sh
+```
+
+Uninstallation stops and disables `bmgeoip-server.service`, removes its unit and
+overrides, deletes the service account's entire crontab, and terminates remaining
+processes owned by that account, including CSV downloads. It deletes
+`/opt/prod/bmgeoip` and `/var/lib/bmgeoip`, including all downloaded CSVs, settings,
+and logs, and removes the `bmgeoip` Linux account and group. BMGeoIP currently
+has no database to drop. Shared system packages and the cron service remain
+available for other applications. Repeated uninstallation handles an absent
+deployment or account; failures stop the script so the reported problem can be
+fixed before retrying. Reinstallation starts with fresh state.
 
 ## Endpoints and operations
 
