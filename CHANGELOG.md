@@ -6,6 +6,8 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+- Restore the theme's narrow left author sidebar on all documentation pages
+  by applying the single layout and author profile defaults to pages.
 - Download missing IPv4/IPv6 CSVs automatically at server startup, show live
   download/validation/import progress, and import validated records into SQLite
   after startup and scheduled downloads. Preserve previous records on failed
