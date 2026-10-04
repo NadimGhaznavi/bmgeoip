@@ -6,6 +6,8 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-10-04 @ 05:44
+
 ## [1.2.2] - 2026-10-03 @ 19:29
 
 - Add a GitHub account link to the documentation's left author pane.
