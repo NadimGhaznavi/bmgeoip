@@ -22,15 +22,15 @@ minimal_mistakes_skin: "dark"
 # Site Settings
 # Site Settings
 mycount:
-   endpoint: "https://count.osoyalce.com/count"
-   site: "bmgeoip"
+  endpoint: "https://count.osoyalce.com/count"
+  site: "bmgeoip"
 locale: "en-US"
 rtl: # true, false (default) # turns direction of the page into right to left for RTL languages
 title: "Bear & Moose GeoIP Service"
 title_separator: "-"
 subtitle: # site tagline that appears below site title in masthead
 name: "bmgeoip"
-description: "The project provides a GeoIP service over ZMQ"
+description: "The project provides a GeoIP service over HTTP and ZMQ"
 url: "https://bmgeoip.osoyalce.com" # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl: "" # the subpath of your site, e.g. "/blog"
 repository: NadimGhaznavi/r3el # GitHub username/repo-name e.g. "mmistakes/minimal-mistakes"
