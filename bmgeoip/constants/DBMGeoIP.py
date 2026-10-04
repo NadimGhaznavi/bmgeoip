@@ -4,7 +4,7 @@ from typing import Final
 
 
 class DBMGeoIP:
-    VERSION: Final[str] = "1.2.3"
+    VERSION: Final[str] = "1.2.5"
     BASE_DIR: Final[str] = "/opt/prod/bmgeoip"
     SERVICE_USER: Final[str] = "bmgeoip"
     SERVICE_HOME: Final[str] = "/var/lib/bmgeoip"
