@@ -130,6 +130,9 @@ author:
     - label: "GitHub"
       icon: "fab fa-fw fa-github"
       url: "https://github.com/NadimGhaznavi"
+    - label: "My Website"
+      icon: "fas fa-fw fa-link"
+      url: "https://www.osoyalce.com/"
 
 # Site Footer
 footer:
