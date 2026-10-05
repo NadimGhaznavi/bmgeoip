@@ -6,6 +6,11 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-05 @ 05:51
+
+- Add CMDB scanner metadata: subtype `GeoIP Service`, supplier `Nadim-Daniel`,
+  and codename `Insight`.
+
 ## [1.2.5] - 2026-10-04 @ 18:58
 
 ## [1.2.3] - 2026-10-04 @ 05:44
