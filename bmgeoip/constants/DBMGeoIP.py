@@ -4,7 +4,7 @@ from typing import Final
 
 
 class DBMGeoIP:
-    VERSION: Final[str] = "1.2.5"
+    VERSION: Final[str] = "1.3.0"
     CMDB_SUBTYPE: Final[str] = "GeoIP Service"
     CMDB_SUPPLIER: Final[str] = "Nadim-Daniel"
     CMDB_CODENAME: Final[str] = "Insight"
