@@ -6,6 +6,8 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-10-05 @ 18:21
+
 - Updated `scripts/new-release.sh` script.
 
 ## [1.3.0] - 2026-10-05 @ 05:51
