@@ -5,6 +5,9 @@ from typing import Final
 
 class DBMGeoIP:
     VERSION: Final[str] = "1.2.5"
+    CMDB_SUBTYPE: Final[str] = "GeoIP Service"
+    CMDB_SUPPLIER: Final[str] = "Nadim-Daniel"
+    CMDB_CODENAME: Final[str] = "Insight"
     BASE_DIR: Final[str] = "/opt/prod/bmgeoip"
     SERVICE_USER: Final[str] = "bmgeoip"
     SERVICE_HOME: Final[str] = "/var/lib/bmgeoip"
