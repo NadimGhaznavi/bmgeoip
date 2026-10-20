@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from bmgeoip.constants.DBMGeoIP import DBMGeoIP
 from bmgeoip.constants.DGeoIp import DGeoIp
 from bmgeoip.interface.DatabaseEnvironment import DatabaseEnvironment
 
@@ -80,6 +81,18 @@ class UpgradeTests(unittest.TestCase):
         fchown.assert_not_called()
         self.assertEqual(self.path.read_text(), original)
         self.assertEqual(self.path.stat().st_mode & 0o777, 0o600)
+
+    def test_recovery_catalog_comes_from_cmdb_declaration(self):
+        with patch.object(DBMGeoIP, 'CMDB_DATABASES', (('BMGeoIP', 'geoip_test'),)):
+            run, _, _ = self.run_recovery()
+        self.assertEqual(DatabaseEnvironment.read(self.path)['DB_NAME'], 'geoip_test')
+        self.assertIn('CREATE DATABASE IF NOT EXISTS `geoip_test`', run.call_args.kwargs['input'])
+
+    def test_invalid_network_prevents_credential_recovery(self):
+        with patch('bmgeoip.interface.Network.Network.binding', side_effect=ValueError('invalid network')):
+            with self.assertRaisesRegex(ValueError, 'invalid network'):
+                self.run_recovery()
+        self.assertFalse(self.path.parent.exists())
 
     def test_invalid_existing_credentials_are_not_replaced(self):
         self.path.parent.mkdir()

@@ -6,6 +6,12 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+This release is named for the element **Helium (He)**. Helium was detected in the Sun's spectrum before scientists discovered it on Earth.
+
+- Use CMDB declarations as the source for listener defaults, persistent state and
+  the default local database reference. Add validated production network overrides
+  and a restart command; preserve settings during reinstall and upgrade.
+
 ## [1.3.1] - 2026-10-05 @ 18:21
 
 - Updated `scripts/new-release.sh` script.

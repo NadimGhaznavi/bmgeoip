@@ -14,7 +14,7 @@ from bmgeoip.constants.DBMGeoIP import DBMGeoIP
 class StatusMessages:
     LIMIT = 1000
 
-    def __init__(self, path: Path = Path(DBMGeoIP.SERVICE_HOME) / 'status-messages.json') -> None:
+    def __init__(self, path: Path = Path(dict(DBMGeoIP.CMDB_COMPONENTS)['State']) / 'status-messages.json') -> None:
         self.path = Path(path)
 
     def snapshot(self) -> list[dict[str, str]]:

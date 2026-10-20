@@ -20,7 +20,7 @@ import time
 from bmgeoip.constants.DBMGeoIP import DBMGeoIP
 
 application = Path(DBMGeoIP.BASE_DIR)
-home = Path(DBMGeoIP.SERVICE_HOME)
+home = Path(dict(DBMGeoIP.CMDB_COMPONENTS)['State'])
 if (application != Path('/opt/prod/bmgeoip') or application.is_symlink()
         or application.resolve() != application):
     raise SystemExit('Refusing to remove an unexpected application directory.')
