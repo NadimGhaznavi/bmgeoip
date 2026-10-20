@@ -21,10 +21,14 @@ import tempfile
 from bmgeoip.constants.DBMGeoIP import DBMGeoIP
 from bmgeoip.constants.DGeoIp import DGeoIp
 from bmgeoip.interface.DatabaseEnvironment import DatabaseEnvironment
+from bmgeoip.interface.Network import Network
 
 installation = Path(DBMGeoIP.BASE_DIR)
 if installation.is_symlink() or Path.cwd().resolve() == installation.resolve():
     raise SystemExit('Run upgrade from a separate checkout; installation must not be a symlink.')
+
+Network.binding("http")
+Network.binding("zmq")
 
 path = Path(DGeoIp.DATABASE_ENV)
 if path.is_symlink() or path.parent.is_symlink():
@@ -48,13 +52,16 @@ try:
             group = grp.getgrnam(account)
         os.chown(path.parent, 0, group.gr_gid)
         os.chmod(path.parent, 0o750)
+        catalog = dict(DBMGeoIP.CMDB_DATABASES)["BMGeoIP"]
+        if not catalog or len(catalog) > 64 or not catalog.isascii() or not catalog.replace("_", "").isalnum():
+            raise SystemExit("Invalid local MariaDB catalog for credential recovery.")
         password = secrets.token_hex(32)
         digest = hashlib.sha1(hashlib.sha1(password.encode()).digest()).hexdigest().upper()
         sql = f"""
-CREATE DATABASE IF NOT EXISTS `bmgeoip` CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+CREATE DATABASE IF NOT EXISTS `{catalog}` CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 CREATE USER IF NOT EXISTS 'bmgeoip'@'localhost' IDENTIFIED BY PASSWORD '*{digest}';
 ALTER USER 'bmgeoip'@'localhost' IDENTIFIED VIA mysql_native_password USING '*{digest}';
-GRANT SELECT, INSERT, DELETE, UPDATE, CREATE, INDEX ON `bmgeoip`.* TO 'bmgeoip'@'localhost';
+GRANT SELECT, INSERT, DELETE, UPDATE, CREATE, INDEX ON `{catalog}`.* TO 'bmgeoip'@'localhost';
 SELECT @@socket;
 """
         descriptor, temporary = tempfile.mkstemp(prefix='.database-', dir=path.parent)
@@ -74,7 +81,7 @@ SELECT @@socket;
                 socket = result.stdout.strip()
                 if not socket.startswith('/') or '\n' in socket or '\r' in socket:
                     raise SystemExit('MariaDB returned an invalid Unix socket path.')
-                output.write('DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_NAME=bmgeoip\nDB_USER=bmgeoip\n'
+                output.write(f'DB_HOST=127.0.0.1\nDB_PORT=3306\nDB_NAME={catalog}\nDB_USER={account}\n'
                              f'DB_PASSWORD={password}\nDB_SOCKET={socket}\n')
                 output.flush()
                 os.fsync(output.fileno())

@@ -104,7 +104,7 @@ class UninstallTests(unittest.TestCase):
         self.assertEqual(events[kill + 1], ['pgrep', '-u', '987'])
 
     def test_unsafe_paths_and_identity_are_rejected_before_commands(self):
-        for attribute, value in (('BASE_DIR', '/opt/prod'), ('SERVICE_HOME', '/var/lib'),
+        for attribute, value in (('BASE_DIR', '/opt/prod'), ('CMDB_COMPONENTS', (('State', '/var/lib'),)),
                                  ('SERVICE_UNIT', '../other.service'), ('SERVICE_USER', 'root')):
             with self.subTest(attribute=attribute), patch.object(DBMGeoIP, attribute, value), \
                     patch('subprocess.run') as run:

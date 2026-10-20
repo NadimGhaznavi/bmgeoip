@@ -36,6 +36,46 @@ Both interfaces are unauthenticated and intended for a trusted LAN.
 
 Startup downloads missing IPv4/IPv6 datasets and imports them into MariaDB. Use the web interface to search addresses, monitor progress, and schedule updates.
 
+## Configuration and CMDB
+
+`bmgeoip/constants/DBMGeoIP.py` contains the literal `VERSION` and `CMDB_*`
+declarations. `CMDB_NETWORK` supplies the `http` and `zmq` listener defaults.
+`CMDB_COMPONENTS` owns the state directory (CSVs, schedules, progress and logs);
+`CMDB_DATABASES` declares the default local MariaDB catalog. Database credentials
+and custom or remote connections remain in `database.env`. When using a different
+local catalog, update the declaration to match it before CMDB discovery.
+
+Installation creates `/opt/prod/bmgeoip/conf/bmgeoip.json` when missing. Reinstall
+and upgrade preserve it. Partial overrides inherit undeclared fields:
+
+```json
+{
+  "network": {
+    "http": {"interface": "127.0.0.1", "port": 54310},
+    "zmq": {"interface": "127.0.0.1"}
+  }
+}
+```
+
+Interfaces must be IPv4 addresses; ports must be integers from 1 to 65535.
+Unknown uses or fields and invalid configuration fail startup and deployment
+validation. A missing file uses the declaration defaults. Settings load once per
+process. Apply changes with:
+
+```sh
+cd /opt/prod/bmgeoip
+sudo scripts/restart.sh
+```
+
+Restart validates configuration before restarting both listeners. Invocation
+arguments `--host`, `--port`, and `--zmq-endpoint` override resolved settings.
+Installer health checks use the same settings, translating wildcard binds to
+loopback for local requests.
+
+Register `BMGeoIP` in CMDB and re-scan the production host to discover the
+release, state component and matching local MariaDB catalog. CMDB network
+collection is deferred; the network declaration describes default listeners.
+
 ## Maintenance
 
 Run deployment commands from the separate checkout:

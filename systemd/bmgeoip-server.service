@@ -16,7 +16,8 @@ NoNewPrivileges=false
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
-StateDirectory=bmgeoip
+StateDirectory=@STATE_DIRECTORY@
+StateDirectoryMode=0755
 ReadWritePaths=/var/spool/cron/crontabs
 
 [Install]
