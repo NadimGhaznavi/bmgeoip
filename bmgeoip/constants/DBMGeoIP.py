@@ -4,11 +4,11 @@ from typing import Final
 
 
 class DBMGeoIP:
-    VERSION: Final[str] = "1.3.1"
+    VERSION: Final[str] = "1.4.0"
     CMDB_TYPE: Final[str] = "application"
     CMDB_SUBTYPE: Final[str] = "GeoIP Service"
     CMDB_SUPPLIER: Final[str] = "Nadim-Daniel"
-    CMDB_CODENAME: Final[str] = "Dragon"
+    CMDB_CODENAME: Final[str] = "Helium"
     BASE_DIR: Final[str] = "/opt/prod/bmgeoip"
     SERVICE_USER: Final[str] = "bmgeoip"
     SERVICE_UNIT: Final[str] = "bmgeoip-server.service"
