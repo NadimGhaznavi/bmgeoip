@@ -12,6 +12,7 @@ from bmgeoip.constants.DGeoIp import DGeoIp
 from bmgeoip.activity.DataLoader import DataLoader
 from bmgeoip.interface.DownloadSchedule import DownloadSchedule
 from bmgeoip.interface.GeoIpLookup import GeoIpLookup
+from bmgeoip.interface.Network import Network
 from bmgeoip.server.BMGeoIPHandler import BMGeoIPHandler
 from bmgeoip.server.LookupHandler import LookupHandler
 from bmgeoip.zmq.ZMQServer import ZMQServer
@@ -24,12 +25,21 @@ class BMGeoIPServer(ThreadingHTTPServer):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--host", default=DBMGeoIP.HOST)
-    parser.add_argument("--port", type=int, default=DBMGeoIP.PORT)
-    parser.add_argument("--zmq-endpoint", default=DBMGeoIP.ZMQ_ENDPOINT)
-    parser.add_argument("--state-dir", type=Path, default=Path(DBMGeoIP.SERVICE_HOME))
+    parser.add_argument("--host")
+    parser.add_argument("--port", type=int)
+    parser.add_argument("--zmq-endpoint")
+    parser.add_argument("--state-dir", type=Path, default=Path(dict(DBMGeoIP.CMDB_COMPONENTS)['State']))
     parser.add_argument('--database-env', type=Path, default=Path(DGeoIp.DATABASE_ENV))
     args = parser.parse_args()
+    try:
+        host, port = Network.binding("http")
+        zmq_host, zmq_port = Network.binding("zmq")
+    except (OSError, ValueError) as error:
+        parser.error(str(error))
+    args.host = host if args.host is None else args.host
+    args.port = port if args.port is None else args.port
+    if args.zmq_endpoint is None:
+        args.zmq_endpoint = f"tcp://{zmq_host}:{zmq_port}"
     try:
         address = ip_address(args.host)
     except ValueError:

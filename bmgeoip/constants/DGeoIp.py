@@ -6,10 +6,10 @@ from bmgeoip.constants.DBMGeoIP import DBMGeoIP
 
 
 class DGeoIp:
-    DATA_DIR: Final[str] = DBMGeoIP.SERVICE_HOME + "/data"
-    SCHEDULE_FILE: Final[str] = DBMGeoIP.SERVICE_HOME + "/download-schedule.json"
+    DATA_DIR: Final[str] = dict(DBMGeoIP.CMDB_COMPONENTS)['State'] + "/data"
+    SCHEDULE_FILE: Final[str] = dict(DBMGeoIP.CMDB_COMPONENTS)['State'] + "/download-schedule.json"
     DATABASE_ENV: Final[str] = "/etc/bmgeoip/database.env"
-    STATUS_FILE: Final[str] = DBMGeoIP.SERVICE_HOME + "/data-status.json"
+    STATUS_FILE: Final[str] = dict(DBMGeoIP.CMDB_COMPONENTS)['State'] + "/data-status.json"
     DOWNLOAD_CRON: Final[str] = "0 3 * * 0"
     URL: Final[str] = "https://raw.githubusercontent.com/ipapi-is/ipapi/main/databases/geolocationDatabaseIPv{version}.csv.zip"
     MEMBER: Final[str] = "geolocationDatabaseIPv{version}.csv"
