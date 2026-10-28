@@ -6,6 +6,8 @@ permalink: /CHANGELOG/
 
 ## [Unreleased]
 
+- Updated README.
+
 ## [1.4.0] - 2026-10-20 @ 19:08
 
 This release is named for the element **Helium (He)**. Helium was detected in the Sun's spectrum before scientists discovered it on Earth.
